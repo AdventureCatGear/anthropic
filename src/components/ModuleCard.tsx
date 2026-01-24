@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
-import { Module } from '../data/modules';
+import type { Module } from '../data/modules';
 
 interface ModuleCardProps {
   module: Module;

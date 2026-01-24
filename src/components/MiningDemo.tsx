@@ -9,7 +9,7 @@ export default function MiningDemo() {
   const [currentHash, setCurrentHash] = useState('');
   const [difficulty, setDifficulty] = useState(4);
 
-  const generateHash = (nonce: number) => {
+  const generateHash = () => {
     const hash = Math.random().toString(16).substr(2, 16);
     return '0'.repeat(difficulty) + hash.substr(difficulty);
   };
@@ -29,7 +29,7 @@ export default function MiningDemo() {
 
       // Simulate finding a valid hash
       if (Math.random() < 0.01 || attempt > 100) {
-        const validHash = generateHash(attempt);
+        const validHash = generateHash();
         setCurrentHash(validHash);
         setFound(true);
         setMining(false);

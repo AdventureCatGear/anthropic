@@ -6,7 +6,8 @@ import ModuleDetail from './components/ModuleDetail';
 import BlockchainVisualization from './components/BlockchainVisualization';
 import MiningDemo from './components/MiningDemo';
 import TransactionDemo from './components/TransactionDemo';
-import { modules, Module } from './data/modules';
+import { modules } from './data/modules';
+import type { Module } from './data/modules';
 
 function App() {
   const [showHero, setShowHero] = useState(true);

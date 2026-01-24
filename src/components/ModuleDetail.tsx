@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { X, CheckCircle2 } from 'lucide-react';
-import { Module } from '../data/modules';
+import type { Module } from '../data/modules';
 
 interface ModuleDetailProps {
   module: Module;
