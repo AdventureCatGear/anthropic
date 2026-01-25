@@ -16,6 +16,110 @@ export interface YearSummary {
 }
 
 export const milestones: Milestone[] = [
+  // 2026 - Bitcoin Reaches New Heights
+  {
+    id: 'btc-100k-2026',
+    date: 'January 2026',
+    year: 2026,
+    title: 'Bitcoin Surpasses $100,000',
+    description: 'Bitcoin crossed the historic $100,000 milestone for the first time, driven by massive ETF inflows, institutional adoption, and growing nation-state interest. The psychological barrier breakthrough marked Bitcoin\'s full acceptance as a mainstream financial asset, with total market capitalization exceeding $2 trillion.',
+    category: 'adoption',
+    impact: 'high',
+    icon: '💯'
+  },
+
+  // 2025 - Mainstream Integration Accelerates
+  {
+    id: 'etf-500b',
+    date: 'December 2025',
+    year: 2025,
+    title: 'Bitcoin ETFs Surpass $500B in Assets',
+    description: 'Spot Bitcoin ETFs collectively surpassed $500 billion in assets under management, with BlackRock\'s IBIT alone holding over $200 billion. The rapid growth made Bitcoin ETFs among the most successful product launches in financial history, rivaling gold ETF adoption that took over a decade.',
+    category: 'investment',
+    impact: 'high',
+    icon: '📈'
+  },
+  {
+    id: 'multiple-states-reserve',
+    date: 'November 2025',
+    year: 2025,
+    title: 'Three US States Establish Bitcoin Reserves',
+    description: 'Texas, Wyoming, and Florida became the first US states to establish strategic Bitcoin reserves, with each allocating a portion of state treasury funds to Bitcoin. This trend sparked discussions in 15+ other states, positioning Bitcoin as a state-level strategic asset.',
+    category: 'political',
+    impact: 'medium',
+    icon: '🏛️'
+  },
+  {
+    id: 'amazon-bitcoin',
+    date: 'September 2025',
+    year: 2025,
+    title: 'Amazon Announces Bitcoin Integration',
+    description: 'Amazon announced it will accept Bitcoin payments through Lightning Network integration and added $5 billion in Bitcoin to its corporate treasury. The move by the world\'s largest e-commerce company validated Bitcoin as a legitimate payment method for mainstream commerce.',
+    category: 'adoption',
+    impact: 'high',
+    icon: '🛒'
+  },
+  {
+    id: 'sovereign-wealth',
+    date: 'August 2025',
+    year: 2025,
+    title: 'Norway Sovereign Wealth Fund Adds Bitcoin',
+    description: 'Norway\'s $1.6 trillion sovereign wealth fund, the world\'s largest, announced a 2% Bitcoin allocation ($32 billion), becoming the first major sovereign wealth fund to directly hold Bitcoin. This triggered similar considerations by Singapore\'s GIC and Abu Dhabi\'s ADIA.',
+    category: 'investment',
+    impact: 'high',
+    icon: '🇳🇴'
+  },
+  {
+    id: 'second-country-legal-tender',
+    date: 'June 2025',
+    year: 2025,
+    title: 'Argentina Adopts Bitcoin as Legal Tender',
+    description: 'Following El Salvador\'s lead, Argentina officially adopted Bitcoin as legal tender alongside the peso, citing hyperinflation and currency instability. President Javier Milei\'s administration positioned Bitcoin as a tool for monetary stability and economic freedom.',
+    category: 'political',
+    impact: 'medium',
+    icon: '🇦🇷'
+  },
+  {
+    id: 'apple-wallet-bitcoin',
+    date: 'May 2025',
+    year: 2025,
+    title: 'Apple Wallet Adds Native Bitcoin Support',
+    description: 'Apple integrated native Bitcoin and Lightning Network support into Apple Wallet, allowing 1+ billion iPhone users to send, receive, and hold Bitcoin without third-party apps. The integration included enhanced security features using the Secure Enclave for key storage.',
+    category: 'banking',
+    impact: 'medium',
+    icon: '🍎'
+  },
+  {
+    id: 'un-bitcoin-aid',
+    date: 'March 2025',
+    year: 2025,
+    title: 'UN Adopts Bitcoin for Humanitarian Aid',
+    description: 'The United Nations began using Bitcoin and Lightning Network for direct humanitarian aid distribution in conflict zones and regions with collapsed banking infrastructure. The program reached 2 million recipients in its first year, demonstrating Bitcoin\'s value for financial inclusion.',
+    category: 'adoption',
+    impact: 'medium',
+    icon: '🌍'
+  },
+  {
+    id: 'fed-bitcoin-study',
+    date: 'February 2025',
+    year: 2025,
+    title: 'Federal Reserve Publishes Bitcoin Reserve Study',
+    description: 'The Federal Reserve published a comprehensive study on Bitcoin as a strategic reserve asset, concluding that Bitcoin could serve as a "digital gold" complement to US gold reserves. While stopping short of recommendations, the study legitimized Bitcoin in central banking discussions.',
+    category: 'regulatory',
+    impact: 'medium',
+    icon: '🏦'
+  },
+  {
+    id: 'goldman-custody',
+    date: 'January 2025',
+    year: 2025,
+    title: 'Goldman Sachs Launches Bitcoin Custody',
+    description: 'Goldman Sachs launched institutional-grade Bitcoin custody services, offering storage, trading, and lending for high-net-worth clients and institutions. The service attracted $10 billion in assets within the first quarter, validating demand from traditional wealth management clients.',
+    category: 'banking',
+    impact: 'low',
+    icon: '🏛️'
+  },
+
   // 2024 - The Institutional Breakthrough Year
   {
     id: 'btc-etf-approval',
@@ -288,6 +392,16 @@ export const milestones: Milestone[] = [
 ];
 
 export const yearSummaries: YearSummary[] = [
+  {
+    year: 2026,
+    summary: 'Bitcoin breaks $100,000 as mainstream adoption reaches unprecedented levels with major tech companies integrating.',
+    highlightIcon: '💯'
+  },
+  {
+    year: 2025,
+    summary: 'Explosive growth year: ETFs reach $500B, Amazon accepts Bitcoin, sovereign wealth funds allocate, and states build reserves.',
+    highlightIcon: '📈'
+  },
   {
     year: 2024,
     summary: 'The year Bitcoin went mainstream with SEC-approved ETFs, BlackRock accumulation, and bipartisan political support.',
