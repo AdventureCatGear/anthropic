@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import Hero from './components/Hero';
+import IntroSection from './components/IntroSection';
+import BitcoinPriceWidget from './components/BitcoinPriceWidget';
 import ModuleCard from './components/ModuleCard';
 import ModuleDetail from './components/ModuleDetail';
 import BlockchainVisualization from './components/BlockchainVisualization';
@@ -30,6 +32,9 @@ function App() {
                 Your comprehensive journey to mastering Bitcoin - from fundamentals to real-world impact
               </p>
             </div>
+
+            {/* Introduction Section */}
+            <IntroSection />
 
             {/* Learning Modules - First */}
             <div className="mb-16">
@@ -64,6 +69,9 @@ function App() {
             <div className="mb-16">
               <MilestonesTimeline />
             </div>
+
+            {/* Bitcoin Price Widget */}
+            <BitcoinPriceWidget />
 
             {/* Footer */}
             <footer className="text-center py-8 border-t border-gray-800">

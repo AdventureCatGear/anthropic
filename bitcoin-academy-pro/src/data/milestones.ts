@@ -38,16 +38,6 @@ export const milestones: Milestone[] = [
     icon: '💻'
   },
   {
-    id: 'btc-100k-2026',
-    date: 'January 2026',
-    year: 2026,
-    title: 'Bitcoin Surpasses $100,000',
-    description: 'Bitcoin crossed the historic $100,000 milestone for the first time, driven by massive ETF inflows, institutional adoption, and growing nation-state interest. The psychological barrier breakthrough marked Bitcoin\'s full acceptance as a mainstream financial asset, with total market capitalization exceeding $2 trillion.',
-    category: 'adoption',
-    impact: 'high',
-    icon: '💯'
-  },
-  {
     id: 'japan-reserve',
     date: 'January 2026',
     year: 2026,
