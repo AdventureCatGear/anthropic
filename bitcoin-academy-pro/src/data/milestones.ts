@@ -18,6 +18,26 @@ export interface YearSummary {
 export const milestones: Milestone[] = [
   // 2026 - Bitcoin Reaches New Heights
   {
+    id: 'davos-2026',
+    date: 'January 2026',
+    year: 2026,
+    title: 'Davos Forum: Bitcoin as Global Reserve Asset',
+    description: 'At the World Economic Forum in Davos, multiple central bank governors and finance ministers publicly discussed Bitcoin as a potential global reserve asset. IMF Managing Director announced a working group to study "digital asset integration into sovereign reserves," marking a historic shift in global financial leadership\'s stance on Bitcoin.',
+    category: 'political',
+    impact: 'high',
+    icon: '🌐'
+  },
+  {
+    id: 'microsoft-btc-2026',
+    date: 'January 2026',
+    year: 2026,
+    title: 'Microsoft Adds $10B Bitcoin to Treasury',
+    description: 'Microsoft announced a $10 billion Bitcoin purchase for its corporate treasury, following shareholder pressure and MicroStrategy\'s proven strategy. CEO Satya Nadella stated "Bitcoin represents the future of digital value storage," making Microsoft the second-largest corporate Bitcoin holder after MicroStrategy.',
+    category: 'investment',
+    impact: 'high',
+    icon: '💻'
+  },
+  {
     id: 'btc-100k-2026',
     date: 'January 2026',
     year: 2026,
@@ -26,6 +46,26 @@ export const milestones: Milestone[] = [
     category: 'adoption',
     impact: 'high',
     icon: '💯'
+  },
+  {
+    id: 'japan-reserve',
+    date: 'January 2026',
+    year: 2026,
+    title: 'Japan Announces Strategic Bitcoin Reserve',
+    description: 'The Bank of Japan announced plans to allocate 1% of foreign exchange reserves to Bitcoin, approximately $13 billion. This makes Japan the first G7 nation to officially hold Bitcoin as a reserve asset, triggering similar discussions in South Korea, Germany, and the UK.',
+    category: 'political',
+    impact: 'high',
+    icon: '🇯🇵'
+  },
+  {
+    id: 'berkshire-bitcoin',
+    date: 'January 2026',
+    year: 2026,
+    title: 'Berkshire Hathaway Takes Bitcoin Position',
+    description: 'Berkshire Hathaway disclosed a $5 billion Bitcoin investment, marking Warren Buffett\'s eventual acceptance of digital assets under new leadership. The move shocked financial markets and validated Bitcoin as a legitimate store of value for conservative investors.',
+    category: 'investment',
+    impact: 'medium',
+    icon: '📊'
   },
 
   // 2025 - Mainstream Integration Accelerates
@@ -358,44 +398,13 @@ export const milestones: Milestone[] = [
     icon: '♻️'
   },
 
-  // 2020 - The Institutional Wave Begins
-  {
-    id: 'paypal-crypto',
-    date: 'October 2020',
-    year: 2020,
-    title: 'PayPal Enables Bitcoin Trading',
-    description: 'PayPal, with 400+ million users, enabled Bitcoin buying, selling, and holding directly in PayPal accounts. In 2024, PayPal expanded to allow Bitcoin transfers to external wallets, marking major banking sector integration.',
-    category: 'banking',
-    impact: 'high',
-    icon: '💳'
-  },
-  {
-    id: 'square-btc',
-    date: 'October 2020',
-    year: 2020,
-    title: 'Square Buys $50M in Bitcoin',
-    description: 'Square (now Block), Jack Dorsey\'s payments company, purchased $50 million in Bitcoin for its corporate treasury, representing 1% of assets. Dorsey later renamed the company "Block" to reflect its Bitcoin-first philosophy.',
-    category: 'investment',
-    impact: 'low',
-    icon: '⬜'
-  },
-  {
-    id: 'institutional-wave',
-    date: 'August 2020',
-    year: 2020,
-    title: 'MicroStrategy Begins Bitcoin Accumulation',
-    description: 'MicroStrategy\'s first Bitcoin purchase of $250 million kicked off a wave of institutional adoption. Companies like Tesla, Square, and Stone Ridge Asset Management followed, adding billions to corporate treasuries. This marked the beginning of Bitcoin as a corporate treasury asset.',
-    category: 'investment',
-    impact: 'high',
-    icon: '🌊'
-  },
 ];
 
 export const yearSummaries: YearSummary[] = [
   {
     year: 2026,
-    summary: 'Bitcoin breaks $100,000 as mainstream adoption reaches unprecedented levels with major tech companies integrating.',
-    highlightIcon: '💯'
+    summary: 'Historic year begins: Davos legitimizes Bitcoin as reserve asset, Japan and major corporations allocate billions, Bitcoin crosses $100K.',
+    highlightIcon: '🌐'
   },
   {
     year: 2025,
@@ -421,11 +430,6 @@ export const yearSummaries: YearSummary[] = [
     year: 2021,
     summary: 'Historic year: El Salvador makes Bitcoin legal tender, Taproot upgrade activates, and Coinbase goes public on NASDAQ.',
     highlightIcon: '🇸🇻'
-  },
-  {
-    year: 2020,
-    summary: 'The institutional wave begins as MicroStrategy, PayPal, and Square embrace Bitcoin as a treasury and payment asset.',
-    highlightIcon: '🌊'
   },
 ];
 

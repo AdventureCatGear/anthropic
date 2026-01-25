@@ -31,24 +31,7 @@ function App() {
               </p>
             </div>
 
-            {/* NEW: Milestones Timeline Section - Featured First! */}
-            <div className="mb-16">
-              <MilestonesTimeline />
-            </div>
-
-            {/* Interactive Demos Section */}
-            <div className="mb-16">
-              <h2 className="text-3xl font-bold mb-8 text-center">
-                Interactive Demonstrations
-              </h2>
-              <div className="space-y-8">
-                <BlockchainVisualization />
-                <MiningDemo />
-                <TransactionDemo />
-              </div>
-            </div>
-
-            {/* Learning Modules */}
+            {/* Learning Modules - First */}
             <div className="mb-16">
               <h2 className="text-3xl font-bold mb-8 text-center">
                 Educational Modules
@@ -63,6 +46,23 @@ function App() {
                   />
                 ))}
               </div>
+            </div>
+
+            {/* Interactive Demos Section - Second */}
+            <div className="mb-16">
+              <h2 className="text-3xl font-bold mb-8 text-center">
+                Interactive Demonstrations
+              </h2>
+              <div className="space-y-8">
+                <BlockchainVisualization />
+                <MiningDemo />
+                <TransactionDemo />
+              </div>
+            </div>
+
+            {/* Milestones Timeline Section - Last */}
+            <div className="mb-16">
+              <MilestonesTimeline />
             </div>
 
             {/* Footer */}
