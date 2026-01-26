@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/BottleComparison.tsx","./src/components/Hero.tsx","./src/components/ImpactCounter.tsx","./src/components/IngredientWheel.tsx","./src/components/IntroSection.tsx","./src/components/ModuleCard.tsx","./src/components/ModuleDetail.tsx","./src/data/modules.ts"],"version":"5.9.3"}
