@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CloudHealth clickthrough demo</title>
+<style>
+  :root {
+    --bar: #16212c; --bar-2: #223242; --ink: #e9eff5; --muted: #9db0c2;
+    --accent: #ff9f1c; --accent-ink: #201400; --info: #2f9bff;
+    --bar-h: 52px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: #0d141b; color: var(--ink);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+
+  /* ---- demo control bar (not part of the product UI) ---- */
+  #bar { position: sticky; top: 0; z-index: 50; min-height: var(--bar-h); display: flex; align-items: center;
+    gap: 10px; padding: 8px 14px; background: var(--bar); border-bottom: 1px solid #2c3e50; flex-wrap: wrap; }
+  #bar .title { font-weight: 600; margin-right: 6px; white-space: nowrap; }
+  #bar .tag { font-size: 11px; color: var(--muted); border: 1px solid #3a4e62; border-radius: 99px; padding: 1px 8px; }
+  #tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  #tabs button, .ctl { background: var(--bar-2); border: 1px solid #34485c; border-radius: 6px; padding: 5px 10px; }
+  #tabs button[aria-current="true"] { background: #0b79c4; border-color: #0b79c4; }
+  #tabs button:hover, .ctl:hover { border-color: #6f8aa5; }
+  .spacer { flex: 1; }
+  .ctl.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .ctl[aria-pressed="true"] { background: #0b79c4; border-color: #0b79c4; }
+
+  /* ---- stage ---- */
+  #wrap { display: flex; justify-content: center; padding: 12px; }
+  #stage { position: relative; width: 100%; max-width: var(--stage-max, 1576px); background: #fff;
+    box-shadow: 0 6px 30px rgba(0,0,0,.5); border-radius: 4px; overflow: visible; }
+  #stage img { display: block; width: 100%; height: auto; border-radius: 4px; user-select: none; -webkit-user-drag: none; }
+
+  .hs { position: absolute; border-radius: 4px; background: transparent; border: 0; padding: 0; }
+  .hs:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .hs.nav { cursor: pointer; }
+  .hs.info { cursor: help; }
+  .hs.nav:hover { box-shadow: 0 0 0 2px var(--accent), 0 0 0 6px rgba(255,159,28,.25); background: rgba(255,159,28,.10); }
+  .hs.info:hover { box-shadow: 0 0 0 2px var(--info); background: rgba(47,155,255,.07); }
+  /* hint markers */
+  .show-hints .hs.nav, .flash .hs.nav { box-shadow: 0 0 0 2px var(--accent); background: rgba(255,159,28,.12);
+    animation: pulse 1.4s ease-in-out infinite; }
+  .show-hints .hs.info::after, .flash .hs.info::after { content: "i"; position: absolute; top: 6px; right: 6px; width: 20px; height: 20px;
+    border-radius: 50%; background: var(--info); color: #fff; font: 700 12px/20px Georgia, serif; text-align: center;
+    box-shadow: 0 0 0 4px rgba(47,155,255,.3); }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 2px var(--accent), 0 0 0 9px rgba(255,159,28,.0); background: rgba(255,159,28,.22); } }
+  @media (prefers-reduced-motion: reduce) { .hs { animation: none !important; } }
+
+  /* tour spotlight + callout */
+  #spot { position: absolute; border-radius: 6px; pointer-events: none; z-index: 20; display: none;
+    box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(8,14,20,.55); transition: all .25s ease; }
+  #stage.touring { overflow: hidden; }
+  #callout { position: absolute; z-index: 30; width: min(340px, 90%); background: #fff; color: #17212b; border-radius: 8px;
+    padding: 14px 16px 12px; box-shadow: 0 10px 40px rgba(0,0,0,.45); display: none; }
+  #callout h3 { margin: 0 0 6px; font-size: 15px; }
+  #callout p { margin: 0 0 10px; font-size: 13.5px; }
+  #callout .do { font-weight: 600; color: #a55a00; }
+  #callout .row { display: flex; align-items: center; gap: 8px; }
+  #callout .count { color: #6b7a89; font-size: 12px; margin-right: auto; }
+  #callout button { border: 1px solid #c5d0db; background: #f3f6f9; color: #17212b; border-radius: 6px; padding: 4px 10px; }
+  #callout button.next { background: #0b79c4; border-color: #0b79c4; color: #fff; font-weight: 600; }
+  #callout .x { position: absolute; top: 6px; right: 8px; border: 0; background: none; font-size: 18px; color: #6b7a89; padding: 2px 6px; }
+
+  #toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: #17212b; color: #fff;
+    border: 1px solid #3a4e62; padding: 9px 14px; border-radius: 8px; z-index: 60; opacity: 0; pointer-events: none;
+    transition: opacity .2s; max-width: 90vw; }
+  #toast.on { opacity: 1; }
+  #foot { text-align: center; color: var(--muted); font-size: 12px; padding: 0 12px 18px; }
+  #foot kbd { border: 1px solid #3a4e62; border-radius: 4px; padding: 0 5px; }
+</style>
+</head>
+<body>
+
+<header id="bar">
+  <span class="title">CloudHealth clickthrough demo</span>
+  <span class="tag" title="Static walkthrough built from screenshots of a demo sandbox. Not a live product.">screenshots · demo sandbox data</span>
+  <nav id="tabs" aria-label="Screens"></nav>
+  <span class="spacer"></span>
+  <button class="ctl" id="btnHints" aria-pressed="false" title="Show what is clickable (H)">Show hotspots</button>
+  <button class="ctl" id="btnFit" aria-pressed="false" title="Shrink the whole screen to fit this window, for presenting (F)">Fit to window</button>
+  <button class="ctl primary" id="btnTour" title="Guided walkthrough (T)">▶ Start tour</button>
+</header>
+
+<main id="wrap">
+  <div id="stage">
+    <img id="shot" alt="">
+    <div id="hotspots"></div>
+    <div id="spot"></div>
+    <div id="callout" role="dialog" aria-live="polite">
+      <button class="x" id="cClose" aria-label="Close">×</button>
+      <h3 id="cTitle"></h3>
+      <p id="cText"></p>
+      <div class="row" id="cRow">
+        <span class="count" id="cCount"></span>
+        <button id="cPrev">Back</button>
+        <button id="cNext" class="next">Next</button>
+      </div>
+    </div>
+  </div>
+</main>
+<div id="foot">Click the highlighted areas to move through the product. <kbd>H</kbd> hotspots · <kbd>T</kbd> tour · <kbd>←</kbd> <kbd>→</kbd> tour steps · <kbd>Esc</kbd> close</div>
+<div id="toast" role="status"></div>
+
+<script>
+/* Screens. `src` values are replaced with embedded data URIs by build.mjs.
+   All rectangles are [x, y, width, height] in pixels of the source screenshot. */
+const SCREENS = {
+  home: {
+    label: "Home", src: "screens/home.png", w: 1568, h: 1123,
+    hotspots: [
+      { go: "ai", r: [8, 275, 238, 32], label: "Open AI & Tokenomics" },
+      { r: [264, 227, 966, 588], title: "Cost History",
+        text: "Daily effective cost across AWS, Azure and Google Cloud in one stacked view. The headline figures show last month's effective cost ($7.32M) next to the current week so far. The tall bar on Nov 1 is the kind of spike the platform is meant to make obvious; the links below the chart drill into each provider." },
+      { r: [269, 170, 276, 28], title: "Provider filter",
+        text: "The Home page is multicloud by default. This filter narrows every card on the page to one or more providers." },
+      { r: [1242, 427, 314, 588], title: "Smart Summary",
+        text: "Smart Summary explains how cost shifted, why it moved and what to do about it. Here it lists the billing accounts with the largest week-over-week change: the top Azure account is up 605%, which lines up with the Nov 1 spike in the chart." },
+      { r: [264, 827, 314, 188], title: "Optimization",
+        text: "Rolls up the top recommendations into a single number: $261,684 of potential monthly savings in this sandbox. View Optimizations opens the list of recommended actions." },
+      { r: [590, 827, 314, 238], title: "Realized Savings",
+        text: "Tracks savings you have actually captured, not just the ones recommended. Last month shows $2.59M realized, down 46% against the previous period." },
+      { r: [916, 827, 314, 238], title: "Reports by Intelligent Assist",
+        text: "Intelligent Assist is the generative-AI FinOps assistant: ask a cost or usage question in plain language and it builds the report for you, so non-technical users can self-serve." },
+    ],
+  },
+  ai: {
+    label: "AI & Tokenomics", src: "screens/ai-tokenomics.png", w: 1564, h: 1217,
+    hotspots: [
+      { go: "home", r: [5, 87, 218, 30], label: "Back to Home" },
+      { go: "subcat", r: [677, 137, 432, 529], label: "Open Total Cost by Subcategory report" },
+      { go: "model", r: [234, 677, 654, 529], label: "Open Cost by Model report" },
+      { r: [234, 137, 432, 529], title: "Total Cost by Provider",
+        text: "Monthly AI spend split by cloud. In this sandbox Azure and Google Cloud carry almost all of it, climbing from about $300K to nearly $580K a month by September, with AWS a thin slice on top." },
+      { r: [1120, 137, 432, 529], title: "Total Cost by Service",
+        text: "The same spend broken out by service: virtual machines for AI workloads, Vertex AI, Azure AI services, search, and individual model line items. Next Series pages through the 40+ smaller services." },
+      { r: [899, 677, 654, 529], title: "Tokenomics",
+        text: "Effective cost per one million tokens, ranked by model. This is the unit-economics view: it shows which models are expensive per token (image and deep-research models on the left) and which are cheap, so teams can match the model to the job." },
+    ],
+  },
+  subcat: {
+    label: "Report: Cost by Subcategory", src: "screens/report-subcategory.png", w: 1576, h: 1189,
+    hotspots: [
+      { go: "ai", r: [238, 61, 64, 24], label: "Back to AI & Tokenomics" },
+      { go: "home", r: [5, 90, 220, 30], label: "Go to Home" },
+      { go: "ai", r: [5, 364, 220, 30], label: "Go to AI & Tokenomics" },
+      { r: [242, 157, 1252, 28], title: "Report controls",
+        text: "Every dashboard chart opens as a full report you can reshape: chart type, interval, time period, axes and the category to group by. Here it is a monthly stacked bar over the last 12 months, grouped by service subcategory." },
+      { r: [248, 218, 1310, 362], title: "Effective cost by service subcategory",
+        text: "Hovering a segment shows its value and the month's total: in January, Virtual Machines were $97,177 of $313,371. Search, Generative AI and Virtual Machines are the three largest bands throughout the year." },
+      { r: [243, 657, 1320, 442], title: "Data table",
+        text: "The table matches the chart, one row per subcategory and one column per month, and every column sorts. Generative AI moves between $44K and $120K a month; 'Other' jumps from about $17K to $85K in August." },
+      { r: [1466, 611, 88, 24], title: "Export", text: "Downloads the table behind the chart for use in a spreadsheet or a finance review." },
+      { r: [1327, 107, 232, 26], title: "Subscriptions and Actions",
+        text: "Subscriptions schedules the report to be delivered to people on a cadence; Actions holds the save and share options for this view." },
+    ],
+  },
+  model: {
+    label: "Report: Cost by Model", src: "screens/report-model.png", w: 1576, h: 1232,
+    hotspots: [
+      { go: "ai", r: [240, 64, 64, 24], label: "Back to AI & Tokenomics" },
+      { go: "home", r: [5, 93, 220, 30], label: "Go to Home" },
+      { go: "ai", r: [5, 367, 220, 30], label: "Go to AI & Tokenomics" },
+      { r: [243, 161, 1142, 28], title: "Report controls",
+        text: "Daily interval over the last 62 days, grouped by model. 'All Filters (1)' shows one filter is applied. Change any of these and press Apply to re-run the report." },
+      { r: [250, 222, 1310, 400], title: "Effective cost per day by model",
+        text: "One stacked bar per day, one colour per model, across every provider: Gemini, Claude and GPT model families side by side. Daily spend peaks near $18K in early September and trends down to a few thousand dollars a day by November. The legend pages through more than 100 models." },
+      { r: [243, 681, 1320, 444], title: "Per-model daily costs",
+        text: "122 models, one row each, with the cost for every day. This is where you find the long tail: image models, text-to-speech and small experiments that cost cents but show who is trying what." },
+      { r: [1467, 636, 88, 24], title: "Export", text: "Downloads the per-model, per-day table." },
+    ],
+  },
+};
+
+/* Guided tour. `act` steps ask the viewer to click; Next works too. */
+const TOUR = [
+  { s: "home", r: [264, 227, 966, 588], title: "Start on Home",
+    text: "One view of spend across AWS, Azure and Google Cloud. Last month closed at $7.32M effective cost, and the Nov 1 spike stands out immediately." },
+  { s: "home", r: [1242, 427, 314, 588], title: "Smart Summary explains the change",
+    text: "Instead of hunting for the cause, Smart Summary ranks the accounts that moved most. The top Azure account is up 605% week over week." },
+  { s: "home", r: [264, 827, 640, 238], title: "Recommended vs. realized savings",
+    text: "$261,684 a month is still on the table, and $2.59M was actually realized last month. Seeing both keeps optimization honest." },
+  { s: "home", r: [916, 827, 314, 238], title: "Ask in plain language",
+    text: "Intelligent Assist builds cost and usage reports from a typed question, so finance and product teams can self-serve." },
+  { s: "home", r: [8, 275, 238, 32], title: "Now the AI spend", act: "ai",
+    text: "AI is the fastest-moving line on most cloud bills.", doText: "Click AI & Tokenomics in the menu." },
+  { s: "ai", r: [234, 137, 432, 529], title: "AI cost by provider",
+    text: "AI spend across all three clouds in one chart, roughly doubling from $300K to $580K a month over the year." },
+  { s: "ai", r: [899, 677, 654, 529], title: "Tokenomics: cost per million tokens",
+    text: "The unit cost of every model, ranked. It answers 'are we using an expensive model where a cheap one would do?'" },
+  { s: "ai", r: [234, 677, 654, 529], title: "Which models drive the bill?", act: "model",
+    text: "The dashboard card is a summary.", doText: "Click the Cost by Model card to open the full report." },
+  { s: "model", r: [250, 222, 1310, 400], title: "Cost by model, day by day",
+    text: "Gemini, Claude and GPT models from different providers on one axis. Daily spend falls from about $18K to a few thousand dollars across the period." },
+  { s: "model", r: [243, 681, 1320, 444], title: "Down to the individual model",
+    text: "122 models with a cost for every day, sortable and exportable." },
+  { s: "model", r: [240, 64, 64, 24], title: "Back to the dashboard", act: "ai",
+    text: "Reports always lead back to where you came from.", doText: "Click Back." },
+  { s: "ai", r: [677, 137, 432, 529], title: "What kind of AI spend is it?", act: "subcat",
+    text: "Models are only part of the bill.", doText: "Click the Total Cost by Subcategory card." },
+  { s: "subcat", r: [248, 218, 1310, 362], title: "Compute, search and generative AI",
+    text: "Virtual machines and search cost as much as the generative AI calls themselves. In January, Virtual Machines were $97K of a $313K month." },
+  { s: "subcat", r: [242, 157, 1252, 28], title: "Reshape any report",
+    text: "Chart type, interval, period and grouping are all adjustable, and Subscriptions delivers the result on a schedule." },
+  { s: "subcat", r: [5, 90, 220, 30], title: "That's the tour", act: "home",
+    text: "From total cloud spend, to AI spend, to the individual model, in three clicks.", doText: "Click Home to finish, or keep exploring." },
+];
+
+const $ = (id) => document.getElementById(id);
+const stage = $("stage"), shot = $("shot"), layer = $("hotspots"), spot = $("spot"), callout = $("callout");
+let current = null, tourIdx = -1, openInfo = null, fit = false;
+
+function pct(r, sc) {
+  return { left: r[0] / sc.w * 100 + "%", top: r[1] / sc.h * 100 + "%", width: r[2] / sc.w * 100 + "%", height: r[3] / sc.h * 100 + "%" };
+}
+
+function show(id, opts = {}) {
+  const sc = SCREENS[id];
+  if (!sc) return;
+  current = id;
+  shot.src = sc.src;
+  shot.alt = "Screenshot: " + sc.label;
+  stage.dataset.aspect = sc.w / sc.h;
+  layer.innerHTML = "";
+  // Larger areas first so smaller hotspots sit on top of them.
+  const ordered = [...sc.hotspots].sort((a, b) => b.r[2] * b.r[3] - a.r[2] * a.r[3]);
+  for (const h of ordered) {
+    const b = document.createElement("button");
+    b.className = "hs " + (h.go ? "nav" : "info");
+    Object.assign(b.style, pct(h.r, sc));
+    b.setAttribute("aria-label", h.label || h.title);
+    b.title = h.label || h.title;
+    b.addEventListener("click", (e) => { e.stopPropagation(); h.go ? navigate(h.go) : info(h); });
+    layer.appendChild(b);
+  }
+  for (const t of $("tabs").children) t.setAttribute("aria-current", t.dataset.id === id);
+  if (!opts.keepHash) history.replaceState(null, "", "#" + id);
+  if (!opts.keepCallout) hideCallout();
+  layout();
+}
+
+function navigate(to) {
+  if (tourIdx >= 0) {
+    const step = TOUR[tourIdx];
+    if (step.act === to) return tourGo(tourIdx + 1);
+    endTour();
+  }
+  show(to);
+}
+
+function layout() {
+  const sc = SCREENS[current];
+  const barH = $("bar").offsetHeight;
+  const maxByHeight = (window.innerHeight - barH - 60) * (sc.w / sc.h);
+  stage.style.setProperty("--stage-max", (fit ? Math.max(480, Math.min(sc.w, maxByHeight)) : sc.w) + "px");
+  if (tourIdx >= 0) placeTour(); else if (openInfo) placeCallout(openInfo.r);
+}
+
+/* ---- callout ---- */
+function placeCallout(r) {
+  const sc = SCREENS[current];
+  const k = stage.clientWidth / sc.w;
+  const box = { x: r[0] * k, y: r[1] * k, w: r[2] * k, h: r[3] * k };
+  const W = stage.clientWidth, H = stage.clientHeight;
+  callout.style.display = "block";
+  const cw = callout.offsetWidth, ch = callout.offsetHeight, gap = 14;
+  let x, y;
+  if (box.x + box.w + gap + cw <= W) { x = box.x + box.w + gap; y = box.y; }           // right
+  else if (box.x - gap - cw >= 0) { x = box.x - gap - cw; y = box.y; }                  // left
+  else if (box.y + box.h + gap + ch <= H) { x = box.x; y = box.y + box.h + gap; }       // below
+  else if (box.y - gap - ch >= 0) { x = box.x; y = box.y - gap - ch; }                  // above
+  else { x = box.x + box.w - cw - 16; y = box.y + 16; }                                 // inside
+  callout.style.left = Math.max(8, Math.min(x, W - cw - 8)) + "px";
+  callout.style.top = Math.max(8, Math.min(y, H - ch - 8)) + "px";
+}
+function hideCallout() { callout.style.display = "none"; openInfo = null; }
+
+function info(h) {
+  if (tourIdx >= 0) endTour();
+  openInfo = h;
+  $("cTitle").textContent = h.title;
+  $("cText").textContent = h.text;
+  $("cRow").style.display = "none";
+  placeCallout(h.r);
+}
+
+/* ---- tour ---- */
+function tourGo(i) {
+  if (i < 0) i = 0;
+  if (i >= TOUR.length) { endTour(); show("home"); toast("Tour finished. Explore freely: click anything highlighted."); return; }
+  tourIdx = i;
+  const step = TOUR[i];
+  if (current !== step.s) show(step.s, { keepCallout: true });
+  openInfo = null;
+  stage.classList.add("touring");
+  $("btnTour").textContent = "■ End tour";
+  $("cTitle").textContent = step.title;
+  $("cText").innerHTML = "";
+  $("cText").append(step.text);
+  if (step.doText) { const d = document.createElement("span"); d.className = "do"; d.textContent = " " + step.doText; $("cText").append(d); }
+  $("cRow").style.display = "flex";
+  $("cCount").textContent = (i + 1) + " of " + TOUR.length;
+  $("cPrev").style.visibility = i === 0 ? "hidden" : "visible";
+  $("cNext").textContent = i === TOUR.length - 1 ? "Finish" : "Next";
+  placeTour();
+}
+function placeTour() {
+  const step = TOUR[tourIdx], sc = SCREENS[current];
+  Object.assign(spot.style, pct(step.r, sc), { display: "block" });
+  placeCallout(step.r);
+  spot.scrollIntoView({ block: "center" });
+  callout.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+function endTour() {
+  tourIdx = -1;
+  spot.style.display = "none";
+  stage.classList.remove("touring");
+  $("btnTour").textContent = "▶ Start tour";
+  hideCallout();
+}
+
+/* ---- misc UI ---- */
+let toastTimer;
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("on"), 2600);
+}
+function setHints(on) { stage.classList.toggle("show-hints", on); $("btnHints").setAttribute("aria-pressed", on); }
+
+// Clicking a part of the screenshot that is not wired up: reveal what is.
+stage.addEventListener("click", (e) => {
+  if (callout.contains(e.target)) return;
+  if (tourIdx >= 0) return;
+  if (openInfo) return hideCallout();
+  stage.classList.add("flash");
+  setTimeout(() => stage.classList.remove("flash"), 1500);
+  toast("That part isn't included in this demo. Highlighted areas are clickable.");
+});
+
+$("btnHints").onclick = () => setHints(!stage.classList.contains("show-hints"));
+$("btnFit").onclick = () => { fit = !fit; $("btnFit").setAttribute("aria-pressed", fit); layout(); };
+$("btnTour").onclick = () => (tourIdx >= 0 ? endTour() : tourGo(0));
+$("cNext").onclick = () => tourGo(tourIdx + 1);
+$("cPrev").onclick = () => tourGo(tourIdx - 1);
+$("cClose").onclick = () => (tourIdx >= 0 ? endTour() : hideCallout());
+
+document.addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k === "escape") { tourIdx >= 0 ? endTour() : hideCallout(); }
+  else if (k === "h") $("btnHints").click();
+  else if (k === "f") $("btnFit").click();
+  else if (k === "t") $("btnTour").click();
+  else if (tourIdx >= 0 && k === "arrowright") tourGo(tourIdx + 1);
+  else if (tourIdx >= 0 && k === "arrowleft") tourGo(tourIdx - 1);
+});
+window.addEventListener("resize", layout);
+shot.addEventListener("load", layout);
+
+for (const [id, sc] of Object.entries(SCREENS)) {
+  const b = document.createElement("button");
+  b.textContent = sc.label; b.dataset.id = id;
+  b.onclick = () => { if (tourIdx >= 0) endTour(); show(id); };
+  $("tabs").appendChild(b);
+}
+for (const sc of Object.values(SCREENS)) { const i = new Image(); i.src = sc.src; } // preload
+
+const start = location.hash.slice(1);
+show(SCREENS[start] ? start : "home");
+if (!SCREENS[start]) { setHints(true); setTimeout(() => setHints(false), 4000); }
+</script>
+</body>
+</html>
