@@ -334,6 +334,16 @@ def scenario_data():
     dc["patches"] = [patch(b, 36, 268, y, 262, name, **LINK) for name, y in zip(DC_NAMES,
         [325, 360, 395, 430, 465, 500, 535, 569, 604, 639, 674, 709, 744, 779, 814, 849, 884, 919, 954, 989])]
     dc["patches"].append(dict(r=b.rect(("c", 36, [222, 1012, 1230, 9]))[1], text=""))   # half-visible last row
+    # Connection health: most healthy, two warnings (rows 6 and 13) and one failure (row 16) left as captured.
+    rows = [325, 360, 395, 430, 465, 500, 535, 569, 604, 639, 674, 709, 744, 779, 814, 849, 884, 919, 954, 989]
+    times = ["6:02 AM", "6:02 AM", "6:04 AM", "6:05 AM", "6:05 AM", "", "6:07 AM", "6:08 AM", "6:09 AM", "6:11 AM",
+             "6:12 AM", "6:12 AM", "", "6:14 AM", "6:15 AM", "", "6:16 AM", "6:18 AM", "6:19 AM", "6:21 AM"]
+    for i, y in enumerate(rows):
+        if i in (5, 12, 15):
+            continue
+        dc["patches"].append(dict(r=b.rect(("c", 36, [992, y - 9, 112, 26]))[1], text="", badge=True))
+        if times[i]:
+            dc["patches"].append(patch(b, 36, 1154, y, 170, "Nov 14, 2026 " + times[i]))
 
     me = S["meta"] = screen(b, "New connection", [42], right=1527)
     me["hot"] = [
@@ -434,7 +444,7 @@ def scenario_data():
         O("connect@choose", [353, 256, 216, 143], "Connect an AI provider",
           "Direct AI spend is the fastest-growing line that never shows up on a cloud bill.", do="Click Anthropic.", act="meta"),
         T("meta", ("c", 42, [217, 221, 1295, 332]), "Three steps",
-          "Name it, authenticate, review the schema."),
+          "Name the connection, authenticate, review the schema."),
         T("meta", ("c", 42, [244, 416, 57, 26]), "On to authentication",
           "", do="Click Next.", act="auth"),
         T("auth", ("c", 43, [243, 345, 730, 180]), "An API key is all it needs",
@@ -451,8 +461,8 @@ def scenario_data():
           "Custom dataset names start with CUSTOM_, and a dataset can stay private or be shared with the organization."),
         T("form", ("c", 51, [223, 535, 1283, 26]), "Next: what to join",
           "", do="Click Dataset selection.", act="select"),
-        T("select", ("c", 55, [243, 745, 630, 68]), "Pick the two datasets",
-          "AWS Cost History joined with Azure AI Cost and Usage."),
+        T("select", ("c", 55, [243, 745, 630, 68]), "The two datasets to join",
+          "Already chosen here: AWS Cost History as Dataset 1 and Azure AI Cost and Usage as Dataset 2."),
         T("select", ("c", 55, [223, 833, 1283, 26]), "Next: how to join them",
           "", do="Click Configuration.", act="curate"),
         T("curate", ("c", 57, [253, 385, 1227, 310]), "Define the join",

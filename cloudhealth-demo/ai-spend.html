@@ -52,6 +52,10 @@
   #user span { display: block; font-size: 11px; line-height: 14px; font-weight: 500; }
   .patch { position: absolute; background: #fff; font-size: 11.5px; line-height: 18px; white-space: nowrap; overflow: hidden; color: #1b2a32; padding-left: 4px; }
 
+  .okpill { position: absolute; left: 7px; top: 2px; height: 22px; border-radius: 11px; padding: 0 9px 0 5px; background: #5eb715; color: #10200a;
+    font-weight: 500; font-size: 11.5px; line-height: 22px; display: flex; align-items: center; gap: 5px; }
+  .okpill i { width: 13px; height: 13px; border-radius: 50%; background: #10200a; color: #5eb715; font: 700 9px/13px Arial, sans-serif; text-align: center; }
+
   /* overlays */
   #dim { position: absolute; z-index: 5; display: none; }
   #ov { position: absolute; z-index: 6; display: none; background: #fff; overflow-y: auto; overflow-x: hidden; }
@@ -168,6 +172,7 @@ function show(target, opts = {}) {
       Object.assign(d.style, { left: px(p.r[0]), top: px(p.r[1]), width: px(p.r[2]), height: px(p.r[3]) });
       if (p.color) d.style.color = p.color;
       if (p.underline) d.style.textDecoration = "underline";
+      if (p.badge) d.innerHTML = '<span class="okpill"><i>&#10003;</i>1/1 Healthy</span>';
       $("page").appendChild(d);
     }
     addHots($("head"), sc.hot, "h"); addHots($("side"), sc.hot, "s"); addHots($("page"), sc.hot, "c");
@@ -192,8 +197,15 @@ function show(target, opts = {}) {
 
 function navigate(to) {
   if (tourIdx >= 0) {
-    if (CFG.tour[tourIdx].act === to) return tourGo(tourIdx + 1);
+    // Clicking ahead of the tour keeps it going: pick it up at the step that matches where the click leads.
+    const T = CFG.tour;
+    let j = T.findIndex((t, i) => i >= tourIdx && t.act === to);
+    if (j >= 0) return tourGo(j + 1);
+    j = T.findIndex((t, i) => i > tourIdx && t.s === to);
+    if (j < 0) j = T.findIndex((t) => t.s === to);
+    if (j >= 0) return tourGo(j);
     endTour();
+    toast("You've left the guided path. Press Start tour to pick it up again.");
   }
   show(to);
 }
@@ -257,7 +269,7 @@ function place() {
 function hideCallout() { callout.style.display = "none"; openInfo = null; }
 
 function info(h) {
-  if (tourIdx >= 0) endTour();
+  if (tourIdx >= 0) return;            // explanations wait until the tour is over; a stray click never ends it
   openInfo = h;
   $("cTitle").textContent = h.title; $("cText").textContent = h.text;
   $("cRow").style.display = "none";
