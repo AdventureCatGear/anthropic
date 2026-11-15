@@ -110,6 +110,21 @@ def patch(b, n, x, y, w, text, **style):
 
 LINK = dict(color="#0072a3", underline=True)
 
+
+def tstep(b, s, spec, title, text, r2=None, ring=None, **kw):
+    """One tour card. spec=None is an intro card (nothing dimmed); r2 is a second
+    highlighted area; ring outlines the thing to click inside a larger highlight."""
+    d = dict(s=s, title=title, text=text, **kw)
+    if spec is None:
+        d["intro"] = True
+    else:
+        d["l"], d["r"] = b.rect(spec)
+    for name, sp in (("r2", r2), ("ring", ring)):
+        if sp:
+            l, r = b.rect(sp)
+            d[name] = dict(l=l, r=r)
+    return d
+
 # ---------------------------------------------------------------------------
 # Shared screens
 # ---------------------------------------------------------------------------
@@ -247,39 +262,42 @@ def scenario_ai():
             text="The badge shows one filter is applied."),
     ]
 
-    T = lambda s, spec, title, text, **kw: dict(s=s, title=title, text=text, **dict(zip(("l", "r"), b.rect(spec))), **kw)
-    O = lambda s, r, title, text, **kw: dict(s=s, l="o", r=r, title=title, text=text, **kw)
+    T = lambda s, spec, title, text, **kw: tstep(b, s, spec, title, text, **kw)
+    O = lambda s, r, title, text, **kw: tstep(b, s, ("o", r), title, text, **kw)
     tour = [
-        T("home", ("c", 22, [1053, 207, 413, 231]), "Where is our AI spend going?",
-          "In about two minutes you'll trace AI cost from this executive dashboard down to one person's token usage."),
-        T("home", ("s", [0, 303, 200, 28]), "Open the AI dashboard",
-          "The tile only shows the total. The breakdown lives in AI & Tokenomics.", do="Click AI & Tokenomics in the left menu.", act="ai"),
+        T("home", None, "Where is our AI spend going?",
+          "This walkthrough follows AI cost from the executive dashboard down to one person's token usage. About two minutes."),
+        T("home", ("c", 22, [1053, 207, 413, 231]), "Start from the executive view",
+          "This tile is the AI line on the CFO dashboard: total model cost and tokens consumed. It tells you how much, not where it goes. The breakdown is in AI & Tokenomics.",
+          do="Click AI & Tokenomics in the left menu.", act="ai", r2=("s", [0, 303, 200, 28])),
         T("ai", ("c", 9, [209, 207, 414, 471]), "First cut: which cloud?",
-          "Azure and Google Cloud carry almost all of the AI bill, and it has nearly doubled since December."),
+          "Monthly AI spend split by cloud. Start here because it shows scale and direction: Azure and Google Cloud carry almost all of it, and the bill has nearly doubled since December."),
         T("ai", ("c", 9, [843, 686, 623, 472]), "Second cut: which models cost the most?",
-          "Cost per million tokens, ranked. The models on the left are the first ones to question."),
+          "Every model ranked by cost per million tokens. It matters because the same task can cost many times more on one model than another. The bars on the left are the first to question."),
         T("ai", ("c", 20, [209, 320, 1257, 471]), "Third cut: how were the tokens bought?",
-          "Batch processing and prompt caching lower the unit cost. These two charts show how much of the spend uses them."),
+          "Left: cost by processing mode. Right: cost by token type, including cached tokens. Batch and caching are the two cheapest ways to buy tokens, so these show how much of the spend already uses them."),
         T("ai", ("c", 20, [209, 838, 1257, 152]), "Don't miss direct provider spend",
-          "Money paid straight to Anthropic and OpenAI never reaches a cloud bill. It is tracked here: $127,677 so far."),
+          "These tiles cover money paid straight to model providers such as Anthropic and OpenAI. It never appears on a cloud bill, so without it the answer would be incomplete: $127,677 so far."),
         T("ai", ("c", 21, [209, 688, 1257, 472]), "So who is spending it?",
-          "Cost is attributed to individual users. To isolate one of them, open the report behind a chart."),
+          "Daily AI cost split by the person who incurred it. This is the view that turns 'AI is expensive' into names. To isolate one of them, we need the report behind a chart."),
         T("ai", ("c", 21, [209, 208, 625, 472]), "Drill into the detail",
-          "Every card opens the full report behind it.", do="Click this card.", act="rep_mp"),
-        T("rep_mp", ("c", 11, [797, 222, 146, 25]), "Switch from dollars to tokens",
-          "To see usage instead of cost, change what the chart measures.", do="Click the Y-Axis control.", act="rep_mp@yaxis"),
+          "This card is daily direct-provider cost by model. Like every card, it summarises a full report where measures and filters can be changed.", do="Click this card.", act="rep_mp"),
+        T("rep_mp", ("c", 11, [215, 275, 1255, 355]), "Switch from dollars to tokens",
+          "The report opens on effective cost per day. Cost shows what was paid; to see how much was actually used, change what the chart measures.",
+          do="Click the Y-Axis control.", act="rep_mp@yaxis", r2=("c", 11, [797, 222, 146, 25])),
         O("rep_mp@yaxis", [40, 171, 192, 23], "Choose Usage Quantity",
-          "Usage Quantity plots the tokens consumed.", do="Click Usage Quantity.", act="rep_usage"),
-        T("rep_usage", ("c", 31, [1180, 224, 74, 20]), "Filter it even further",
-          "This is tokens per day for everyone. Narrow it to the person you want.", do="Click All Filters.", act="rep_usage@filters"),
+          "The Y-axis can plot cost, list cost, cost per million tokens, cache efficiency or usage. Usage Quantity is tokens consumed, which is what we want.", do="Click Usage Quantity.", act="rep_usage"),
+        T("rep_usage", ("c", 31, [215, 275, 1255, 355]), "Filter it even further",
+          "The chart now shows tokens per day for everyone. To answer 'who', narrow it to a single person.",
+          do="Click All Filters.", act="rep_usage@filters", r2=("c", 31, [1180, 224, 74, 20])),
         O("rep_usage@filters", [8, 314, 180, 22], "Filter by user",
-          "Filters cover organization, project, provider and user.", do="Click User.", act="rep_usage@pick"),
+          "Filters are grouped by what they act on: AI attributes, cost, organization, project, provider, services, usage and user. We want one person.", do="Click User.", act="rep_usage@pick"),
         O("rep_usage@pick", [154, 536, 228, 26], "Select the user",
-          "Users are listed by name.", do="Click the ticked user.", act="rep_usage@set"),
+          "Users are listed by name. One is already ticked for this walkthrough.", do="Click the ticked user.", act="rep_usage@set"),
         O("rep_usage@set", [12, 33, 62, 22], "Apply the filter",
-          "One user is selected.", do="Click Apply.", act="rep_user"),
+          "The filter is set to one user name. Nothing changes on the chart until it is applied.", do="Click Apply.", act="rep_user"),
         T("rep_user", ("c", 35, [215, 275, 1255, 320]), "Answer: who, which model, how much",
-          "This user's tokens per day, by model. The same filter isolates a business unit, a team or a project."),
+          "The same report, now for one person: which models they called and how many tokens each day. The same filter isolates a business unit, a team or a project, so this answers 'where is the spend going' at any level."),
     ]
     return dict(file="ai-spend.html", title="Where is our AI spend going?", start="home", screens=S, tour=tour, images=b.images)
 
@@ -421,39 +439,46 @@ def scenario_data():
             text="Preview shows the resulting rows before you create the dataset. Once created, it appears in the Datasets list and can be used in any report or dashboard."),
     ]
 
-    T = lambda s, spec, title, text, **kw: dict(s=s, title=title, text=text, **dict(zip(("l", "r"), b.rect(spec))), **kw)
-    O = lambda s, r, title, text, **kw: dict(s=s, l="o", r=r, title=title, text=text, **kw)
+    T = lambda s, spec, title, text, **kw: tstep(b, s, spec, title, text, **kw)
+    O = lambda s, r, title, text, **kw: tstep(b, s, ("o", r), title, text, **kw)
     tour = [
-        T("connect", ("c", 36, [220, 286, 1250, 300]), "Bring your own data",
-          "In about two minutes you'll connect an AI provider's billing, then combine it with cloud cost in one dataset."),
-        T("connect", ("c", 36, [1334, 151, 137, 24]), "Start with Data Connect",
-          "It brings in spend from outside AWS, Azure and Google Cloud: Databricks, file uploads and provider APIs.", do="Click Add Data Connect.", act="connect@choose"),
+        T("connect", None, "Bring your own data",
+          "This walkthrough connects an AI provider's billing, then combines it with cloud cost in one dataset. About two minutes."),
+        T("connect", ("c", 36, [220, 286, 1250, 300]), "Start with Data Connect",
+          "Every source of spend brought in from outside AWS, Azure and Google Cloud, with its health and last collection time. We start here because AI provider bills are not on any cloud invoice.",
+          do="Click Add Data Connect.", act="connect@choose", r2=("c", 36, [1334, 151, 137, 24])),
         O("connect@choose", [119, 94, 684, 305], "Pick the source",
-          "Six connectors. Anthropic pulls AI spend and token usage straight from the provider.", do="Click Anthropic.", act="meta"),
+          "The source types: AWS exports, file uploads, Databricks, OpenAI, Anthropic and GitHub Copilot. Anthropic pulls spend and token usage straight from the provider, which is the gap we want to close.", do="Click Anthropic.", act="meta"),
         T("meta", ("c", 42, [217, 221, 1295, 332]), "Three short steps",
-          "Name the connection, authenticate, review the schema.", do="Click Next.", act="auth"),
+          "A new connection has three parts: a name, authentication and a schema review. It is short on purpose, so adding a source takes minutes rather than a project.", do="Click Next.", act="auth"),
         T("auth", ("c", 43, [243, 345, 730, 180]), "An API key is all it needs",
-          "No exports or spreadsheets to maintain: spend and token usage by workspace and model are collected automatically and sit next to your cloud costs."),
-        T("auth", ("s", [0, 247, 200, 28]), "Next: make it reportable",
-          "Every connected source becomes a dataset.", do="Click Reporting to open Datasets.", act="datasets"),
+          "Authentication needs an API key plus the organization's ID and name. That replaces exports and spreadsheets: spend and token usage by workspace and model are collected automatically and sit next to your cloud costs."),
+        T("auth", ("c", 43, [217, 221, 1295, 366]), "Next: make it reportable",
+          "Once connected, the source becomes a dataset. Datasets are what reports and dashboards are built on, so that is where to go next.",
+          do="Click Reporting to open Datasets.", act="datasets", r2=("s", [0, 247, 200, 28])),
         T("datasets", ("c", 49, [220, 145, 1290, 520]), "Find it among the datasets",
-          "Connected sources sit next to the built-in cloud, AI and FOCUS datasets. To combine two of them, create a new one.", do="Click Create Dataset.", act="datasets@choose"),
+          "Every dataset available for reporting: built-in ones for each cloud, AI and FOCUS, plus connected sources and custom ones. To see AI and cloud cost side by side, we need a new dataset that combines two of these.",
+          do="Click Create Dataset.", act="datasets@choose", ring=("c", 49, [1390, 151, 120, 24])),
         O("datasets@choose", [317, 77, 268, 285], "Curate, join or merge",
-          "Join adds columns by combining two datasets that share row values.", do="Click Join Datasets.", act="form", pos="above"),
+          "Curate trims one dataset, Merge stacks datasets with matching columns, Join adds columns from a second one. Join puts AI cost next to cloud cost.", do="Click Join Datasets.", act="form", pos="above"),
         T("form", ("c", 51, [223, 240, 1283, 321]), "Name the new dataset",
-          "Custom names start with CUSTOM_. It can stay private or be shared with the organization.", do="Click Dataset selection.", act="select"),
+          "Every custom dataset needs a name starting with CUSTOM_, which keeps it distinct from the built-in ones; the red note is that rule. It can stay private or be shared with the organization.",
+          do="Click Dataset selection.", act="select", ring=("c", 51, [223, 535, 1283, 26])),
         T("select", ("c", 55, [223, 535, 1283, 324]), "Cloud cost meets AI cost",
-          "AWS Cost History and Azure AI Cost and Usage are already selected as the two sides of the join.", do="Click Configuration.", act="curate"),
+          "The two sides of the join, already chosen: AWS Cost History for cloud spend and Azure AI Cost and Usage for AI spend. Together they answer what neither does alone.",
+          do="Click Configuration.", act="curate", ring=("c", 55, [223, 833, 1283, 26])),
         T("curate", ("c", 57, [253, 385, 1227, 310]), "Match them on month",
-          "A full join keeps every row from both sides, lined up by month."),
-        T("curate", ("c", 57, [470, 893, 110, 21]), "Choose the numbers",
-          "Measures are the values the dataset will carry.", do="Click Add Measures.", act="curate@measures"),
+          "The join type and the matching columns. A full join keeps every row from both sides, and matching on month lines cloud cost and AI cost up on the same timeline."),
+        T("curate", ("c", 57, [223, 757, 1268, 315]), "Choose the numbers",
+          "Curation decides what the new dataset contains. Measures are the numbers it carries; without at least one there is nothing to chart.",
+          do="Click Add Measures.", act="curate@measures", ring=("c", 57, [470, 893, 110, 21])),
         O("curate@measures", [8, 28, 304, 850], "Cost and usage, from either side",
-          "These are the AWS columns. Column Dataset switches to the Azure AI ones.", do="Click Apply.", act="curate"),
-        T("curate", ("c", 57, [637, 929, 118, 21]), "Choose how to slice them",
-          "Dimensions are what you group and filter by.", do="Click Add Dimensions.", act="curate@dims"),
+          "The measures available from AWS Cost History: cost in several forms, savings and usage. Column Dataset switches to the Azure AI side, so figures can come from both.", do="Click Apply.", act="curate", ring=("o", [12, 33, 62, 22])),
+        T("curate", ("c", 57, [223, 757, 1268, 315]), "Choose how to slice them",
+          "Dimensions are how the numbers can be grouped and filtered. Month is already here from the join; more can be added.",
+          do="Click Add Dimensions.", act="curate@dims", ring=("c", 57, [637, 929, 118, 21])),
         O("curate@dims", [18, 195, 290, 155], "Result: cloud and AI in one dataset",
-          "Model, provider and token type become columns next to cloud cost. Create saves it for any report or dashboard."),
+          "The AI dataset's own dimensions: model, model provider, token type, processing mode and more. Adding them is what lets one report show cloud cost and AI cost by model. Create then saves the dataset for any report or dashboard."),
     ]
     return dict(file="bring-your-data.html", title="Bring your own data", start="connect", screens=S, tour=tour, images=b.images)
 
@@ -522,34 +547,36 @@ def scenario_savings():
             text="Savings realized by terminating unused or decommissioned resources."),
     ]
 
-    T = lambda s, spec, title, text, **kw: dict(s=s, title=title, text=text, **dict(zip(("l", "r"), b.rect(spec))), **kw)
+    T = lambda s, spec, title, text, **kw: tstep(b, s, spec, title, text, **kw)
     tour = [
-        T("home", ("c", 22, [209, 847, 1257, 310]), "Are we actually saving money?",
-          "In about two minutes you'll see what could still be saved, where, and what has already been saved."),
-        T("home", ("s", [0, 274, 200, 28]), "Start with what's left to save",
-          "Recommendations lists every saving CloudHealth has found that hasn't been acted on yet.", do="Click Recommendations.", act="opt"),
+        T("home", None, "Are we actually saving money?",
+          "This walkthrough shows what could still be saved, where, and what has already been saved. About two minutes."),
+        T("home", ("c", 22, [209, 847, 1257, 310]), "Start with what's left to save",
+          "This card on the CFO dashboard is the headline: $2,594,311 saved last month. Before trusting it, look at what is still unclaimed. Recommendations lists every saving found that hasn't been acted on.",
+          do="Click Recommendations.", act="opt", r2=("s", [0, 274, 200, 28])),
         T("opt", ("c", 47, [209, 280, 650, 232]), "$230,283 a month still available",
-          "Split by source: rightsizing is half, and commitments are nearly all the rest."),
+          "The Savings Summary totals every open recommendation. The coloured bar shows where it comes from, which tells you where to spend effort: rightsizing is half, commitments nearly all the rest."),
         T("opt", ("c", 47, [209, 520, 871, 232]), "Commitments: fix before you buy",
-          "Buying more would save $113,133 a month, but $1.28M of existing commitments is going unused."),
+          "These two cards cover Savings Plans and Reserved Instances. Buying more would save $113,133 a month, but $1.28M already committed is going unused, so the first move is to use what you have."),
         T("opt", ("c", 47, [209, 760, 432, 392]), "Catch surprises early",
-          "28 active anomalies, worth $1,047 so far. Small, because they are flagged within days."),
+          "Active Anomalies lists unusual spend from the last 30 days with its cost impact. It is here because an anomaly caught within days costs little: 28 of them add up to $1,047."),
         T("opt", ("c", 47, [649, 760, 431, 392]), "The biggest slice: rightsizing",
-          "Half of the potential comes from resources larger than they need to be.", do="Click the Rightsizing Summary.", act="right"),
+          "Rightsizing is the largest source: resources provisioned bigger than their workload needs, ranked by service.", do="Click the Rightsizing Summary.", act="right"),
         T("right", ("c", 48, [217, 278, 424, 484]), "Which services are oversized",
-          "The five services with the most to give back: $115,866 a month, split into downsizing and terminating."),
+          "Potential savings for the five services with the most to give back: $115,866 a month. Blue is what downsizing would save and red is what terminating would save, so you can see which kind of action each service needs."),
         T("right", ("c", 48, [1080, 278, 424, 466]), "A to-do list with prices",
-          "Each line is one action and its monthly saving, largest first."),
-        T("right", ("s", [0, 408, 200, 28]), "From potential to proven",
-          "A recommendation only counts once someone acts on it.", do="Click Realized Savings.", act="realized"),
+          "The Terminate Recommendations list turns the total into specific actions, each with its monthly saving, largest first. This is what an engineering team can actually pick up."),
+        T("right", ("c", 48, [1080, 278, 424, 466]), "From potential to proven",
+          "Everything so far is potential. A recommendation only counts once someone acts on it, so the next question is what was actually captured.",
+          do="Click Realized Savings.", act="realized", r2=("s", [0, 408, 200, 28])),
         T("realized", ("c", 44, [209, 318, 1296, 312]), "Proof: $41.4M saved in 12 months",
-          "Realized savings by month and source. Most comes from negotiated and commitment discounts."),
+          "Realized savings by month, coloured by source, with the running total as a line. This is the proof, and it shows most savings come from negotiated and commitment discounts."),
         T("realized", ("c", 44, [209, 679, 1296, 352]), "Are commitments pulling their weight?",
-          "Savings and coverage from commitments, month by month."),
+          "Commitment savings and coverage, month by month. Coverage is the share of eligible usage under a commitment; watching both shows whether commitments keep pace as usage grows."),
         T("realized", ("c", 45, [209, 699, 644, 392]), "Effective Savings Rate",
-          "The return on your discounts over time. The slide from about 60% to 33% shows there is room to save more."),
+          "What you saved as a share of what list price would have cost. It is the single best measure of discount performance, and the slide from about 60% to 33% shows there is room to save more."),
         T("realized", ("c", 46, [209, 382, 644, 792]), "Answer: yes, with more to take",
-          "Downsizing and eliminating resources are the smallest sources so far. That is exactly what the rightsizing list addresses."),
+          "Savings from downsizing and eliminating resources are the smallest sources so far. That is exactly what the rightsizing list addresses."),
     ]
     return dict(file="savings.html", title="Are we actually saving money?", start="home", screens=S, tour=tour, images=b.images)
 

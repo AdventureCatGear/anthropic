@@ -23,7 +23,8 @@
   #scen { background: transparent; color: #fff; border: 0; padding: 5px 4px; font: inherit; font-size: 14px; font-weight: 600; max-width: 100%; cursor: pointer; }
   #scen option { background: var(--bar-2); color: #fff; }
   #tabs button { font-size: 12px; padding: 4px 6px; }
-  #bar .title { font-size: 13px; } #tabs { gap: 2px; } #btnHints { font-size: 12px; padding: 5px 8px; }
+  #bar .title { font-size: 13px; } #tabs { gap: 2px; } #btnHints { font-size: 12px; padding: 5px 8px; border: 1px solid var(--accent); background: transparent; }
+  #btnHints[aria-pressed="true"] { background: rgba(255,159,28,.18); border-color: var(--accent); }
   #btnTour.idle { animation: beckon 2.4s ease-in-out infinite; }
   @keyframes beckon { 50% { box-shadow: 0 0 0 8px rgba(255,159,28,.28); transform: scale(1.05); } }
   #tabs { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -86,10 +87,17 @@
   @keyframes pulse { 50% { box-shadow: 0 0 0 2px var(--accent), 0 0 0 9px rgba(255,159,28,0); background: rgba(255,159,28,.26); } }
   @media (prefers-reduced-motion: reduce) { .hs, .fade #pane, .fade #side, #btnTour.idle { animation: none !important; } }
 
-  #spot { position: absolute; border-radius: 6px; pointer-events: none; z-index: 20; display: none;
-    box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(8,14,20,.5); }
-  #spot.soft { box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(8,14,20,.12); }   /* dialogs and panels are already set apart */
-  #callout { position: absolute; z-index: 30; width: 330px; max-width: 90%; background: #fff; color: #17212b; border-radius: 8px;
+  #mask { position: absolute; left: 0; top: 0; z-index: 20; pointer-events: none; display: none; }
+  #mask path { fill: rgba(8,14,20,.5); transition: fill .3s; }
+  #mask.soft path { fill: rgba(8,14,20,.12); }      /* dialogs and panels are already set apart */
+  .ring { position: absolute; z-index: 21; pointer-events: none; border-radius: 6px; box-shadow: 0 0 0 3px var(--accent); display: none; }
+  .ring.ping::after { content: ""; position: absolute; inset: -3px; border-radius: 9px; border: 2px solid var(--accent); animation: ping .75s ease-out 1 forwards; }
+  @keyframes ping { from { inset: -3px; opacity: .9; } to { inset: -20px; opacity: 0; } }
+  #callout.glide { transition: left .32s cubic-bezier(.2,.7,.2,1), top .32s cubic-bezier(.2,.7,.2,1); }
+  #callout.pop { animation: pop .3s ease-out 1; }
+  @keyframes pop { from { opacity: .3; transform: translateY(6px); } }
+  @media (prefers-reduced-motion: reduce) { .ring.ping::after, #callout.pop { animation: none; } #callout.glide { transition: none; } }
+  #callout { position: absolute; z-index: 30; width: 370px; max-width: 90%; background: #fff; color: #17212b; border-radius: 8px;
     padding: 14px 16px 12px; box-shadow: 0 10px 40px rgba(0,0,0,.45); display: none; }
   #callout h3 { margin: 0 18px 6px 0; font-size: 15px; }
   #callout p { margin: 0 0 10px; font-size: 13.5px; }
@@ -109,12 +117,11 @@
 <body>
 
 <header id="bar">
-  <span class="title">CloudHealth walkthrough <small id="ver">v5</small></span>
+  <span class="title">CloudHealth walkthrough <small id="ver">v6</small></span>
   <label id="scenWrap"><span>Scenario</span><select id="scen" aria-label="Choose a scenario"></select></label>
   <button class="ctl primary idle" id="btnTour">▶ Start tour</button>
-  <nav id="tabs" aria-label="Screens"></nav>
-  <span class="spacer"></span>
   <button class="ctl" id="btnHints" aria-pressed="false">Show hotspots</button>
+  <nav id="tabs" aria-label="Screens"></nav>
 </header>
 
 <main id="holder">
@@ -125,7 +132,8 @@
       <div id="pane"><div id="page"><img id="pageImg" alt=""></div></div>
       <div id="dim"></div>
       <div id="ov"><div id="ovin"><img id="ovImg" alt=""></div></div>
-      <div id="spot"></div>
+      <svg id="mask"><path id="maskPath" fill-rule="evenodd"/></svg>
+      <div class="ring" id="ring0"></div><div class="ring" id="ring1"></div><div class="ring" id="ring2"></div>
     </div>
     <div id="callout" role="dialog" aria-live="polite">
       <button class="x" id="cClose" aria-label="Close">×</button>
@@ -146,7 +154,7 @@
 const CFG = __CFG__;
 const W = 1529, HEAD = 48, SIDE = 200, MAXH = 1093;
 const $ = (id) => document.getElementById(id);
-const stage = $("stage"), wrap = $("wrap"), pane = $("pane"), ov = $("ov"), dim = $("dim"), spot = $("spot"), callout = $("callout");
+const stage = $("stage"), wrap = $("wrap"), pane = $("pane"), ov = $("ov"), dim = $("dim"), mask = $("mask"), rings = [$("ring0"), $("ring1"), $("ring2")], callout = $("callout");
 let cur = null, curOv = null, tourIdx = -1, openInfo = null, k = 1, H = MAXH;
 
 const parse = (t) => { const [s, o] = t.split("@"); return { s, o: o || null }; };
@@ -227,6 +235,7 @@ function layout() {
   k = Math.min(1, availW / W);
   H = Math.round(Math.max(560, Math.min(MAXH, availH / k)));
   stage.style.height = px(H); stage.style.transform = "scale(" + k + ")";
+  mask.setAttribute("width", W); mask.setAttribute("height", H); mask.setAttribute("viewBox", "0 0 " + W + " " + H);
   wrap.style.width = px(W * k); wrap.style.height = px(H * k);
   if (curOv) {
     const d = CFG.screens[cur].overlays[curOv];
@@ -259,28 +268,84 @@ function reveal(l, r) {
   if (top >= el.scrollTop + 8 && bot <= el.scrollTop + vh - 8) return;
   el.scrollTop = r[3] > vh - 40 ? top - 20 : top - (vh - r[3]) / 2;
 }
-function place() {
+/* The part of a rectangle that is actually on screen, in stage coordinates. */
+function visible(l, r) {
+  let [x, y, w, h] = onStage(l, r);
+  const minY = l === "c" ? HEAD : 0, x2 = Math.min(W, x + w), y2 = Math.min(H, y + h);
+  x = Math.max(0, x); y = Math.max(minY, y);
+  return [x, y, Math.max(0, x2 - x), Math.max(0, y2 - y)];
+}
+let shown = null, raf = 0;
+function draw(rs, dim) {
+  shown = rs;
+  let d = "M0 0H" + W + "V" + H + "H0Z";
+  rs.forEach((r, i) => {
+    const on = r && r[2] > 4 && r[3] > 4;
+    Object.assign(rings[i].style, on ? { display: "block", left: px(r[0]), top: px(r[1]), width: px(r[2]), height: px(r[3]) } : { display: "none" });
+    if (on && i < 2) d += "M" + r[0] + " " + r[1] + "h" + r[2] + "v" + r[3] + "h" + -r[2] + "Z";   // rings 0 and 1 are openings; ring 2 is an outline only
+  });
+  $("maskPath").setAttribute("d", d);
+  mask.style.display = dim ? "block" : "none";
+}
+function glideTo(to, dim) {
+  cancelAnimationFrame(raf);
+  const from = shown;
+  if (!from || !from.some(Boolean)) { draw(to, dim); return ping(); }
+  const t0 = performance.now(), D = 340;
+  (function frame(now) {
+    const p = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - p, 3);
+    draw(to.map((r, i) => {
+      const f = from[i] || (r && [r[0] + r[2] / 2, r[1] + r[3] / 2, 0, 0]);       // a new highlight grows from its centre
+      return r ? r.map((v, n) => f[n] + (v - f[n]) * e) : null;
+    }), dim);
+    if (p < 1) raf = requestAnimationFrame(frame); else { draw(to, dim); ping(); }
+  })(t0);
+}
+function ping() { rings.forEach((r) => { r.classList.remove("ping"); void r.offsetWidth; r.classList.add("ping"); }); }
+function hideSpot() { cancelAnimationFrame(raf); shown = null; mask.style.display = "none"; rings.forEach((r) => (r.style.display = "none")); }
+
+function place(animate) {
   const t = tourIdx >= 0 ? CFG.tour[tourIdx] : openInfo;
   if (!t) return;
-  let [x, y, w, h] = onStage(t.l, t.r);
-  // clip to what is visible of that layer
-  const minY = t.l === "c" ? HEAD : 0, x2 = Math.min(W, x + w), y2 = Math.min(H, y + h);
-  x = Math.max(0, x); y = Math.max(minY, y); w = Math.max(0, x2 - x); h = Math.max(0, y2 - y);
-  spot.classList.toggle("soft", t.l === "o");
-  if (tourIdx >= 0) Object.assign(spot.style, { display: h > 4 ? "block" : "none", left: px(x), top: px(y), width: px(w), height: px(h) });
-  // callout lives outside the scaled stage so its text stays readable
-  const B = { x: x * k, y: y * k, w: w * k, h: h * k }, SW = W * k, SH = H * k, gap = 14;
+  const touring = tourIdx >= 0;
+  // what is highlighted: the main area, an optional second area, and an optional outline on the thing to click
+  const main = t.intro ? null : visible(t.l, t.r);
+  const second = t.r2 ? visible(t.r2.l, t.r2.r) : null, mark = t.ring ? visible(t.ring.l, t.ring.r) : null;
+  if (touring) {
+    mask.classList.toggle("soft", t.l === "o");
+    const to = [main, second, mark];
+    if (t.intro) hideSpot(); else if (animate) glideTo(to, true); else { cancelAnimationFrame(raf); draw(to, true); }
+  }
+  // the callout lives outside the scaled stage so its text stays readable
+  const SW = W * k, SH = H * k, gap = 14;
   callout.style.display = "block";
+  callout.classList.toggle("glide", !!animate);
   const cw = callout.offsetWidth, ch = callout.offsetHeight;
+  const clampX = (x) => Math.max(8, Math.min(x, SW - cw - 8)), clampY = (y) => Math.max(8, Math.min(y, SH - ch - 8));
   let cx, cy;
-  if (t.pos === "above" && curOv) { cx = B.x + B.w / 2 - cw / 2; cy = ov.offsetTop * k - gap - ch; }   // keep the whole dialog visible
-  else if (B.x + B.w + gap + cw <= SW) { cx = B.x + B.w + gap; cy = B.y; }
-  else if (B.x - gap - cw >= 0) { cx = B.x - gap - cw; cy = B.y; }
-  else if (B.y + B.h + gap + ch <= SH) { cx = B.x + B.w - cw; cy = B.y + B.h + gap; }
-  else if (B.y - gap - ch >= 0) { cx = B.x + B.w - cw; cy = B.y - gap - ch; }
-  else { cx = B.x + B.w - cw - 14; cy = B.y + B.h - ch - 14; }
-  callout.style.left = px(Math.max(8, Math.min(cx, SW - cw - 8)));
-  callout.style.top = px(Math.max(8, Math.min(cy, SH - ch - 8)));
+  if (t.intro) { cx = SW - cw - 24; cy = SH - ch - 24; }                         // out of the way: the whole screen stays visible
+  else if (t.pos === "above" && curOv) { cx = main[0] * k + main[2] * k / 2 - cw / 2; cy = ov.offsetTop * k - gap - ch; }   // keep the whole dialog visible
+  else {
+    // try every side of every highlighted area and keep the spot that hides the least of them
+    const holes = [main, second].filter((r) => r && r[2] > 4 && r[3] > 4).map((r) => ({ x: r[0] * k, y: r[1] * k, w: r[2] * k, h: r[3] * k }));
+    const keep = holes.concat(mark ? [{ x: mark[0] * k, y: mark[1] * k, w: mark[2] * k, h: mark[3] * k, heavy: 1 }] : []);
+    const cands = [];
+    for (const B of holes) cands.push(
+      [B.x + B.w + gap, B.y], [B.x - gap - cw, B.y], [B.x + B.w - cw, B.y + B.h + gap], [B.x, B.y + B.h + gap],
+      [B.x + B.w - cw, B.y - gap - ch], [B.x, B.y - gap - ch], [B.x + B.w + gap, B.y + B.h - ch], [B.x - gap - cw, B.y + B.h - ch]);
+    cands.push([SW - cw - 16, SH - ch - 16], [16, SH - ch - 16], [SW - cw - 16, 16], [SW / 2 - cw / 2, SH - ch - 16]);
+    let best = Infinity;
+    cands.forEach(([x, y], n) => {
+      x = clampX(x); y = clampY(y);
+      let cost = n * 0.01;
+      for (const B of keep) {
+        const ox = Math.min(x + cw, B.x + B.w) - Math.max(x, B.x), oy = Math.min(y + ch, B.y + B.h) - Math.max(y, B.y);
+        if (ox > 0 && oy > 0) cost += ox * oy * (B.heavy ? 50 : 1);
+      }
+      if (cost < best) { best = cost; cx = x; cy = y; }
+    });
+  }
+  callout.style.left = px(clampX(cx)); callout.style.top = px(clampY(cy));
 }
 function hideCallout() { callout.style.display = "none"; openInfo = null; }
 
@@ -296,6 +361,7 @@ function info(h) {
 function tourGo(i) {
   if (i < 0) i = 0;
   if (i >= CFG.tour.length) { endTour(); show(CFG.start); return; }                 // finishing returns to where the tour began
+  const wasOn = tourIdx >= 0 && callout.style.display === "block";
   tourIdx = i; openInfo = null;
   const t = CFG.tour[i];
   if (here() !== t.s) show(t.s, { keepCallout: true });
@@ -308,11 +374,12 @@ function tourGo(i) {
   $("cCount").textContent = (i + 1) + " of " + CFG.tour.length;
   $("cPrev").style.visibility = i === 0 ? "hidden" : "visible";
   $("cNext").textContent = i === CFG.tour.length - 1 ? "Finish" : "Next";
-  reveal(t.l, t.r);
-  place();
+  if (!t.intro) { reveal(t.l, t.r); if (t.ring) reveal(t.ring.l, t.ring.r); }
+  place(wasOn);
+  callout.classList.remove("pop"); void callout.offsetWidth; callout.classList.add("pop");
 }
 function endTour() {
-  tourIdx = -1; spot.style.display = "none";
+  tourIdx = -1; hideSpot();
   $("btnTour").textContent = "▶ Start tour"; $("btnTour").classList.add("idle");
   hideCallout();
 }
@@ -332,7 +399,7 @@ stage.addEventListener("click", () => {
   stage.classList.add("flash"); setTimeout(() => stage.classList.remove("flash"), 1500);
   toast("That part isn't included in this walkthrough. Highlighted areas are clickable.");
 });
-pane.addEventListener("scroll", place); ov.addEventListener("scroll", place);
+pane.addEventListener("scroll", () => place()); ov.addEventListener("scroll", () => place());
 $("btnHints").onclick = () => setHints(!stage.classList.contains("hints"));
 $("btnTour").onclick = () => (tourIdx >= 0 ? endTour() : tourGo(0));
 $("cNext").onclick = () => tourGo(tourIdx + 1);
@@ -354,7 +421,7 @@ for (const [id, sc] of Object.entries(CFG.screens)) {
 }
 const first = location.hash.slice(1);
 show(CFG.screens[first] ? first : CFG.start, { instant: true });
-if (!CFG.screens[first]) { setHints(true); hintTimer = setTimeout(() => setHints(false), 4000); }
+
 </script>
 </body>
 </html>
