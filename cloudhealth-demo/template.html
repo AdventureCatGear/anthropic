@@ -17,7 +17,13 @@
   #bar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--bar);
     border-bottom: 1px solid #2c3e50; flex-wrap: wrap; }
   #bar .title { font-weight: 600; margin-right: 4px; }
-  #scen { background: var(--bar-2); color: var(--ink); border: 1px solid #34485c; border-radius: 6px; padding: 5px 8px; font: inherit; font-weight: 600; max-width: 100%; }
+  #scenWrap { display: flex; align-items: center; gap: 8px; border: 2px solid var(--accent); border-radius: 8px; padding: 2px 4px 2px 10px; background: #1d2a37; }
+  #scenWrap span { color: var(--accent); font-weight: 700; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+  #scen { background: transparent; color: #fff; border: 0; padding: 5px 4px; font: inherit; font-size: 15px; font-weight: 600; max-width: 100%; cursor: pointer; }
+  #scen option { background: var(--bar-2); color: #fff; }
+  #tabs button { font-size: 12px; padding: 4px 8px; }
+  #btnTour.idle { animation: beckon 2.4s ease-in-out infinite; }
+  @keyframes beckon { 50% { box-shadow: 0 0 0 8px rgba(255,159,28,.28); transform: scale(1.05); } }
   #tabs { display: flex; gap: 4px; flex-wrap: wrap; }
   #tabs button, .ctl { background: var(--bar-2); border: 1px solid #34485c; border-radius: 6px; padding: 5px 10px; white-space: nowrap; }
   #tabs button[aria-current="true"] { background: #0b79c4; border-color: #0b79c4; }
@@ -39,8 +45,8 @@
   .light #head { background: rgb(48,66,80); } .dark #head { background: rgb(15,23,28); }
   .light #side { background: rgb(243,245,247); } .dark #side { background: rgb(23,37,43); }
   .light #pane { background: #fff; } .dark #pane { background: rgb(27,43,50); }
-  .fade #pane, .fade #side, .fade #head { animation: fade .35s ease; }
-  @keyframes fade { from { opacity: .25; } }
+  .fade #pane, .fade #side { animation: fade .5s ease; }
+  @keyframes fade { from { opacity: 0; } }
 
   /* replaced text in the header */
   #pill { position: absolute; left: 179px; top: 13px; width: 242px; height: 22px; border-radius: 11px; padding: 0 9px;
@@ -61,6 +67,7 @@
   #ov { position: absolute; z-index: 6; display: none; background: #fff; overflow-y: auto; overflow-x: hidden; }
   #ov.dialog { box-shadow: 0 8px 40px rgba(0,0,0,.45); }
   #ov.panel { box-shadow: -4px 0 18px rgba(0,0,0,.25); }
+  #ov.pop { box-shadow: 0 2px 10px rgba(0,0,0,.3); border: 1px solid #c8d3dc; border-radius: 3px; }
   #ovin { position: relative; }
 
   /* hotspots */
@@ -74,10 +81,11 @@
     border-radius: 50%; background: var(--info); color: #fff; font: 700 12px/20px Georgia, serif; text-align: center; box-shadow: 0 0 0 4px rgba(47,155,255,.3); }
   .ovopen #head .hs, .ovopen #side .hs, .ovopen #pane .hs { display: none; }
   @keyframes pulse { 50% { box-shadow: 0 0 0 2px var(--accent), 0 0 0 9px rgba(255,159,28,0); background: rgba(255,159,28,.26); } }
-  @media (prefers-reduced-motion: reduce) { .hs, .fade #pane, .fade #side, .fade #head { animation: none !important; } }
+  @media (prefers-reduced-motion: reduce) { .hs, .fade #pane, .fade #side, #btnTour.idle { animation: none !important; } }
 
   #spot { position: absolute; border-radius: 6px; pointer-events: none; z-index: 20; display: none;
     box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(8,14,20,.5); }
+  #spot.soft { box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(8,14,20,.12); }   /* dialogs and panels are already set apart */
   #callout { position: absolute; z-index: 30; width: 330px; max-width: 90%; background: #fff; color: #17212b; border-radius: 8px;
     padding: 14px 16px 12px; box-shadow: 0 10px 40px rgba(0,0,0,.45); display: none; }
   #callout h3 { margin: 0 18px 6px 0; font-size: 15px; }
@@ -99,11 +107,11 @@
 
 <header id="bar">
   <span class="title">CloudHealth walkthrough</span>
-  <select id="scen" aria-label="Choose a walkthrough"></select>
+  <label id="scenWrap"><span>Scenario</span><select id="scen" aria-label="Choose a scenario"></select></label>
   <nav id="tabs" aria-label="Screens"></nav>
   <span class="spacer"></span>
   <button class="ctl" id="btnHints" aria-pressed="false">Show hotspots</button>
-  <button class="ctl primary" id="btnTour">▶ Start tour</button>
+  <button class="ctl primary idle" id="btnTour">▶ Start tour</button>
 </header>
 
 <main id="holder">
@@ -158,7 +166,7 @@ function addHots(parent, list, layer) {
 function show(target, opts = {}) {
   const { s, o } = parse(target), sc = CFG.screens[s];
   if (!sc) return;
-  const changed = s !== cur, themeChange = cur && CFG.screens[cur].theme !== sc.theme;
+  const changed = s !== cur;
   cur = s; curOv = o;
   if (changed) {
     stage.classList.remove("light", "dark"); stage.classList.add(sc.theme);
@@ -177,7 +185,7 @@ function show(target, opts = {}) {
     }
     addHots($("head"), sc.hot, "h"); addHots($("side"), sc.hot, "s"); addHots($("page"), sc.hot, "c");
     pane.scrollTop = 0;
-    if (themeChange) { stage.classList.remove("fade"); void stage.offsetWidth; stage.classList.add("fade"); }
+    if (!opts.instant) { stage.classList.remove("fade"); void stage.offsetWidth; stage.classList.add("fade"); }   // a new page fades in
   }
   // overlay
   stage.classList.toggle("ovopen", !!o);
@@ -219,7 +227,10 @@ function layout() {
   wrap.style.width = px(W * k); wrap.style.height = px(H * k);
   if (curOv) {
     const d = CFG.screens[cur].overlays[curOv];
-    if (d.kind === "dialog") {
+    if (d.kind === "pop") {
+      Object.assign(dim.style, { left: 0, top: 0, width: px(W), height: px(H), background: "transparent" });
+      Object.assign(ov.style, { left: px(d.x), top: px(d.y), width: px(d.w), height: px(d.h) });
+    } else if (d.kind === "dialog") {
       Object.assign(dim.style, { left: 0, top: 0, width: px(W), height: px(H), background: "rgba(0,0,0,.6)" });
       const h = Math.min(d.h, H - 20);
       Object.assign(ov.style, { left: px((W - d.w) / 2), top: px(Math.max(10, (H - h) / 2)), width: px(d.w), height: px(h) });
@@ -252,13 +263,15 @@ function place() {
   // clip to what is visible of that layer
   const minY = t.l === "c" ? HEAD : 0, x2 = Math.min(W, x + w), y2 = Math.min(H, y + h);
   x = Math.max(0, x); y = Math.max(minY, y); w = Math.max(0, x2 - x); h = Math.max(0, y2 - y);
+  spot.classList.toggle("soft", t.l === "o");
   if (tourIdx >= 0) Object.assign(spot.style, { display: h > 4 ? "block" : "none", left: px(x), top: px(y), width: px(w), height: px(h) });
   // callout lives outside the scaled stage so its text stays readable
   const B = { x: x * k, y: y * k, w: w * k, h: h * k }, SW = W * k, SH = H * k, gap = 14;
   callout.style.display = "block";
   const cw = callout.offsetWidth, ch = callout.offsetHeight;
   let cx, cy;
-  if (B.x + B.w + gap + cw <= SW) { cx = B.x + B.w + gap; cy = B.y; }
+  if (t.pos === "above" && curOv) { cx = B.x + B.w / 2 - cw / 2; cy = ov.offsetTop * k - gap - ch; }   // keep the whole dialog visible
+  else if (B.x + B.w + gap + cw <= SW) { cx = B.x + B.w + gap; cy = B.y; }
   else if (B.x - gap - cw >= 0) { cx = B.x - gap - cw; cy = B.y; }
   else if (B.y + B.h + gap + ch <= SH) { cx = B.x + B.w - cw; cy = B.y + B.h + gap; }
   else if (B.y - gap - ch >= 0) { cx = B.x + B.w - cw; cy = B.y - gap - ch; }
@@ -279,11 +292,12 @@ function info(h) {
 /* ---- guided tour ---- */
 function tourGo(i) {
   if (i < 0) i = 0;
-  if (i >= CFG.tour.length) { endTour(); toast("Tour finished. Explore freely: anything highlighted is clickable."); return; }
+  if (i >= CFG.tour.length) { endTour(); show(CFG.start); return; }                 // finishing returns to where the tour began
   tourIdx = i; openInfo = null;
   const t = CFG.tour[i];
   if (here() !== t.s) show(t.s, { keepCallout: true });
-  $("btnTour").textContent = "■ End tour";
+  clearTimeout(hintTimer); setHints(false);
+  $("btnTour").textContent = "■ End tour"; $("btnTour").classList.remove("idle");
   $("cTitle").textContent = t.title;
   $("cText").textContent = t.text ? t.text + " " : "";
   if (t.do) { const d = document.createElement("span"); d.className = "do"; d.textContent = t.do; $("cText").append(d); }
@@ -296,11 +310,11 @@ function tourGo(i) {
 }
 function endTour() {
   tourIdx = -1; spot.style.display = "none";
-  $("btnTour").textContent = "▶ Start tour";
+  $("btnTour").textContent = "▶ Start tour"; $("btnTour").classList.add("idle");
   hideCallout();
 }
 
-let toastTimer;
+let toastTimer, hintTimer;
 function toast(msg) {
   const t = $("toast"); t.textContent = msg; t.classList.add("on");
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("on"), 2600);
@@ -310,6 +324,7 @@ function setHints(on) { stage.classList.toggle("hints", on); $("btnHints").setAt
 // A click on something that is not wired up reveals what is.
 stage.addEventListener("click", () => {
   if (tourIdx >= 0) return;
+  if (curOv && CFG.screens[cur].overlays[curOv].kind === "pop") return show(cur);
   if (openInfo) return hideCallout();
   stage.classList.add("flash"); setTimeout(() => stage.classList.remove("flash"), 1500);
   toast("That part isn't included in this walkthrough. Highlighted areas are clickable.");
@@ -335,8 +350,8 @@ for (const [id, sc] of Object.entries(CFG.screens)) {
   $("tabs").appendChild(b);
 }
 const first = location.hash.slice(1);
-show(CFG.screens[first] ? first : CFG.start);
-if (!CFG.screens[first]) { setHints(true); setTimeout(() => setHints(false), 4000); }
+show(CFG.screens[first] ? first : CFG.start, { instant: true });
+if (!CFG.screens[first]) { setHints(true); hintTimer = setTimeout(() => setHints(false), 4000); }
 </script>
 </body>
 </html>

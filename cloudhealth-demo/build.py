@@ -147,14 +147,13 @@ def home(b, to_ai=None, to_opt=None, to_rs=None):
 
 def scenario_ai():
     b = Builder()
-    b.header(47, "light"); b.header(38, "dark")
+    b.header(47, "light")
     S = {}
     S["home"] = home(b, to_ai="ai")
 
     ai = S["ai"] = screen(b, "AI & Tokenomics", [9, 20, 21])
     ai["hot"] = [
         b.hot(("s", [0, 162, 200, 28]), go="home", label="Home"),
-        b.hot(("h", [1239, 97, 28, 28]), go="ai_dark", label="Switch to dark theme"),
         b.hot(("c", 9, [209, 686, 625, 472]), go="rep_model", label="Open Cost by Model report"),
         b.hot(("c", 21, [209, 208, 625, 472]), go="rep_mp", label="Open Multi-Provider AI Cost and Usage by Model"),
         b.hot(("c", 9, [209, 207, 414, 471]), title="Total Cost by Provider",
@@ -197,7 +196,7 @@ def scenario_ai():
 
     mp = S["rep_mp"] = report("Multi-Provider report", 11)
     mp["hot"] += [
-        b.hot(("c", 11, [797, 222, 146, 25]), go="rep_usage", label="Change Y-Axis to Usage Quantity"),
+        b.hot(("c", 11, [797, 222, 146, 25]), go="rep_mp@yaxis", label="Open the Y-Axis options"),
         b.hot(("c", 11, [215, 275, 1255, 355]), title="Effective cost per day by model name",
             text="Direct spend with the model providers, by exact model version."),
         b.hot(("c", 11, [215, 686, 1260, 370]), title="Per-model table",
@@ -205,6 +204,14 @@ def scenario_ai():
         b.hot(("c", 11, [1265, 179, 206, 21]), title="Subscriptions and Actions",
             text="Subscriptions delivers the report to people on a schedule. Actions holds the save and share options."),
     ]
+
+    # Y-Axis dropdown: a close-up capture, placed exactly under the chip it belongs to
+    key, (w, h) = b.crop(60, (9, 34, 246, 255))
+    mp["overlays"]["yaxis"] = dict(src=key, w=w, h=h, kind="pop", x=797, y=245 - TOP, hot=[
+        dict(l="o", r=[40, 171, 192, 23], go="rep_usage", label="Usage Quantity"),
+        dict(l="o", r=[40, 55, 192, 112], title="Measures",
+             text="What the chart plots: cache efficiency, effective cost, effective cost per one million tokens, list cost or usage quantity."),
+    ])
 
     us = S["rep_usage"] = report("Usage view", 31, tab=False)
     us["hot"] += [
@@ -236,22 +243,9 @@ def scenario_ai():
         b.hot(("c", 35, [215, 275, 1255, 320]), title="One user's token usage",
             text="The report now shows a single user: which models they called and how many tokens each day."),
         b.hot(("c", 35, [215, 667, 1260, 268]), title="Model by day",
-            text="Four models for this user, with a total row. The same filter works for a team, a project or an API key."),
+            text="Four models for this user, with a total row. The same filter works for a business unit, a team or a project."),
         b.hot(("c", 35, [1180, 224, 92, 20]), title="All Filters (1)",
             text="The badge shows one filter is applied."),
-    ]
-
-    ad = S["ai_dark"] = screen(b, "Dark theme", [38, 39, 40], theme="dark")
-    ad["hot"] = [
-        b.hot(("h", [1239, 97, 28, 28]), go="ai", label="Switch to light theme"),
-        b.hot(("c", 40, [209, 222, 644, 472]), go="rep_dark", label="Open Multi-Provider AI Cost and Usage by Model"),
-        b.hot(("c", 38, [209, 207, 1296, 471]), title="Same dashboard, dark theme",
-            text="The theme switch in the header applies everywhere in the product."),
-    ]
-    rd = S["rep_dark"] = screen(b, "Dark report", [41], theme="dark", tab=False)
-    rd["hot"] = [
-        b.hot(("c", 41, [213, 137, 54, 20]), go="ai_dark", label="Back"),
-        b.hot(("h", [1239, 97, 28, 28]), go="rep_mp", label="Switch to light theme"),
     ]
 
     T = lambda s, spec, title, text, **kw: dict(s=s, title=title, text=text, **dict(zip(("l", "r"), b.rect(spec))), **kw)
@@ -274,9 +268,11 @@ def scenario_ai():
         T("ai", ("c", 21, [209, 208, 625, 472]), "Open the report behind a card",
           "Every card is a summary of a full report.", do="Click this card.", act="rep_mp"),
         T("rep_mp", ("c", 11, [797, 222, 146, 25]), "Reshape the report",
-          "Cost is one view. Switch the Y-axis to see tokens instead.", do="Click the Y-Axis control.", act="rep_usage"),
-        T("rep_usage", ("c", 31, [1180, 224, 74, 20]), "Now narrow it down",
-          "The chart is in tokens used per day.", do="Click All Filters.", act="rep_usage@filters"),
+          "Cost is one way to look at it. The Y-axis can plot other measures.", do="Click the Y-Axis control.", act="rep_mp@yaxis"),
+        O("rep_mp@yaxis", [40, 171, 192, 23], "Pick a measure",
+          "Cost, list cost, cost per one million tokens, cache efficiency or tokens used.", do="Click Usage Quantity.", act="rep_usage"),
+        T("rep_usage", ("c", 31, [1180, 224, 74, 20]), "Filter it even further",
+          "The chart now shows tokens used per day. Filters narrow it to exactly the slice you care about.", do="Click All Filters.", act="rep_usage@filters"),
         O("rep_usage@filters", [8, 314, 180, 22], "Filter on any dimension",
           "Organization, project, provider, user and more.", do="Click User.", act="rep_usage@pick"),
         O("rep_usage@pick", [154, 536, 228, 26], "Pick a person",
@@ -284,13 +280,7 @@ def scenario_ai():
         O("rep_usage@set", [12, 33, 62, 22], "Apply the filter",
           "One user is selected.", do="Click Apply.", act="rep_user"),
         T("rep_user", ("c", 35, [215, 275, 1255, 320]), "One person's AI usage",
-          "Which models this user called and how many tokens, each day. From total spend to one person in a few clicks."),
-        T("rep_user", ("c", 35, [213, 137, 54, 20]), "Back to the dashboard",
-          "Reports lead back to where you came from.", do="Click Back.", act="ai"),
-        T("ai", ("h", [1239, 97, 28, 28]), "One more thing: dark theme",
-          "For those who prefer it.", do="Click the theme switch.", act="ai_dark"),
-        T("ai_dark", ("c", 38, [209, 207, 1296, 471]), "That's the tour",
-          "Keep exploring: anything highlighted is clickable, and the blue markers explain what you're looking at."),
+          "Which models this user called and how many tokens, each day. The same filter works for a business unit, a team or a project: from total spend to one group or one person in a few clicks."),
     ]
     return dict(file="ai-spend.html", title="Where is our AI spend going?", start="home", screens=S, tour=tour, images=b.images)
 
@@ -436,49 +426,35 @@ def scenario_data():
     O = lambda s, r, title, text, **kw: dict(s=s, l="o", r=r, title=title, text=text, **kw)
     tour = [
         T("connect", ("c", 36, [220, 286, 1250, 300]), "Not all spend comes from the big three clouds",
-          "Data Connect brings in everything else: Databricks, file uploads and direct provider APIs."),
+          "Data Connect brings in everything else: Databricks, file uploads and direct provider APIs, ready to report on."),
         T("connect", ("c", 36, [1334, 151, 137, 24]), "Add a source",
           "A connection takes a few minutes.", do="Click Add Data Connect.", act="connect@choose"),
         O("connect@choose", [119, 94, 684, 305], "Choose what to connect",
-          "AWS exports, file uploads, Databricks, OpenAI, Anthropic and GitHub Copilot."),
-        O("connect@choose", [353, 256, 216, 143], "Connect an AI provider",
-          "Direct AI spend is the fastest-growing line that never shows up on a cloud bill.", do="Click Anthropic.", act="meta"),
+          "AWS exports, file uploads, Databricks, OpenAI, Anthropic and GitHub Copilot.", do="Click Anthropic to connect an AI provider.", act="meta"),
         T("meta", ("c", 42, [217, 221, 1295, 332]), "Three steps",
-          "Name the connection, authenticate, review the schema."),
-        T("meta", ("c", 42, [244, 416, 57, 26]), "On to authentication",
-          "", do="Click Next.", act="auth"),
+          "Name the connection, authenticate, review the schema.", do="Click Next.", act="auth"),
         T("auth", ("c", 43, [243, 345, 730, 180]), "An API key is all it needs",
-          "After that, spend and token usage by workspace and model are collected automatically."),
+          "No exports or spreadsheets to maintain: spend and token usage by workspace and model are collected automatically and sit next to your cloud costs."),
         T("auth", ("s", [0, 247, 200, 28]), "Now shape the data",
           "Connected sources become datasets you can report on.", do="Click Reporting to open Datasets.", act="datasets"),
-        T("datasets", ("c", 49, [220, 238, 1289, 420]), "One catalogue of datasets",
-          "Built-in datasets for each cloud, AI and FOCUS, next to Data Connect sources and custom ones."),
-        T("datasets", ("c", 49, [1390, 151, 120, 24]), "Build your own",
-          "Combine sources into the view your business needs.", do="Click Create Dataset.", act="datasets@choose"),
+        T("datasets", ("c", 49, [220, 145, 1290, 520]), "One catalogue of datasets",
+          "Built-in datasets for each cloud, AI and FOCUS, next to Data Connect sources and your own custom ones.", do="Click Create Dataset to build one.", act="datasets@choose"),
         O("datasets@choose", [317, 77, 268, 285], "Curate, join or merge",
-          "Join adds columns by combining two datasets that share row values.", do="Click Join Datasets.", act="form"),
-        T("form", ("c", 51, [243, 285, 640, 225]), "Name it",
-          "Custom dataset names start with CUSTOM_, and a dataset can stay private or be shared with the organization."),
-        T("form", ("c", 51, [223, 535, 1283, 26]), "Next: what to join",
-          "", do="Click Dataset selection.", act="select"),
-        T("select", ("c", 55, [243, 745, 630, 68]), "The two datasets to join",
-          "Already chosen here: AWS Cost History as Dataset 1 and Azure AI Cost and Usage as Dataset 2."),
-        T("select", ("c", 55, [223, 833, 1283, 26]), "Next: how to join them",
-          "", do="Click Configuration.", act="curate"),
+          "Join adds columns by combining two datasets that share row values.", do="Click Join Datasets.", act="form", pos="above"),
+        T("form", ("c", 51, [223, 240, 1283, 321]), "Name it",
+          "Custom dataset names start with CUSTOM_, and a dataset can stay private or be shared with the organization.", do="Click Dataset selection.", act="select"),
+        T("select", ("c", 55, [223, 535, 1283, 324]), "The two datasets to join",
+          "Already chosen here: AWS Cost History as Dataset 1 and Azure AI Cost and Usage as Dataset 2.", do="Click Configuration.", act="curate"),
         T("curate", ("c", 57, [253, 385, 1227, 310]), "Define the join",
           "Choose the join type and the columns the two datasets share. Here they are matched on month."),
         T("curate", ("c", 57, [470, 893, 110, 21]), "Choose what to keep",
           "Measures are the numbers; dimensions are what you group them by.", do="Click Add Measures.", act="curate@measures"),
-        O("curate@measures", [18, 170, 290, 705], "Measures from either side",
-          "Cost, savings and usage columns from the AWS dataset. Switch Column Dataset to pick from the Azure AI one."),
-        O("curate@measures", [12, 33, 62, 22], "Apply the selection",
-          "", do="Click Apply.", act="curate"),
+        O("curate@measures", [8, 28, 304, 850], "Measures from either side",
+          "Cost, savings and usage columns from the AWS dataset. Switch Column Dataset to pick from the Azure AI one.", do="Click Apply.", act="curate"),
         T("curate", ("c", 57, [637, 929, 118, 21]), "And the dimensions",
-          "", do="Click Add Dimensions.", act="curate@dims"),
+          "The columns you will group and filter by.", do="Click Add Dimensions.", act="curate@dims"),
         O("curate@dims", [18, 195, 290, 155], "AI-specific dimensions",
-          "Model, model provider, token type, processing mode: the AI dataset's own vocabulary, ready to report on."),
-        O("curate@dims", [12, 33, 62, 22], "That's the tour",
-          "Create would save the dataset for use in any report or dashboard. Keep exploring: anything highlighted is clickable."),
+          "Model, model provider, token type, processing mode: the AI dataset's own vocabulary. Create then saves the dataset for use in any report or dashboard."),
     ]
     return dict(file="bring-your-data.html", title="Bring your own data", start="connect", screens=S, tour=tour, images=b.images)
 
@@ -552,7 +528,7 @@ def scenario_savings():
         T("home", ("c", 22, [209, 847, 1257, 310]), "The question every CFO asks",
           "Are we actually saving money? $2,594,311 last month and $41,428,230 over 12 months says yes. Start with what could still be saved."),
         T("home", ("s", [0, 274, 200, 28]), "Where the next savings are",
-          "", do="Click Recommendations.", act="opt"),
+          "Recommendations lists every saving CloudHealth has found that hasn't been acted on yet, with a monthly value on each.", do="Click Recommendations.", act="opt"),
         T("opt", ("c", 47, [209, 280, 650, 232]), "Everything still on the table",
           "$230,283 a month of potential savings, split by source."),
         T("opt", ("c", 47, [209, 520, 871, 232]), "Commitments",
@@ -561,20 +537,20 @@ def scenario_savings():
           "Unusual spend is flagged with its cost impact, before it becomes next month's surprise."),
         T("opt", ("c", 47, [649, 760, 431, 392]), "The biggest slice: rightsizing",
           "Half of the potential savings comes from resources that are bigger than they need to be.", do="Click the Rightsizing Summary.", act="right"),
-        T("right", ("c", 48, [217, 278, 424, 484]), "Where the oversizing is",
-          "$115,866 a month across the top five services, by downsizing or terminating."),
+        T("right", ("c", 48, [217, 278, 424, 484]), "Which services are oversized",
+          "The five services with the most to give back: $115,866 a month in total, split into what downsizing saves and what terminating saves."),
         T("right", ("c", 48, [1080, 278, 424, 466]), "Specific actions, with a price on each",
           "Not 'optimize compute' but a named action and its monthly saving."),
-        T("right", ("s", [0, 408, 200, 28]), "Did the savings happen?",
-          "Recommendations are only potential.", do="Click Realized Savings.", act="realized"),
+        T("right", ("s", [0, 408, 200, 28]), "From potential to proven",
+          "A recommendation only counts once someone acts on it. Realized Savings shows what was actually captured.", do="Click Realized Savings.", act="realized"),
         T("realized", ("c", 44, [209, 318, 1296, 312]), "Savings you can prove",
           "Realized savings by month and by source, with the cumulative total."),
         T("realized", ("c", 44, [209, 679, 1296, 352]), "Commitments, measured",
           "Savings and coverage from commitments over the year."),
         T("realized", ("c", 45, [209, 699, 644, 392]), "Effective Savings Rate",
-          "One number for the return on your discounts, tracked over time."),
-        T("realized", ("c", 46, [209, 382, 644, 792]), "That's the tour",
-          "Savings from downsizing and eliminating resources close the loop from recommendation to result. Keep exploring: anything highlighted is clickable."),
+          "One number for the return on your discounts, tracked over time. The slide from about 60% to 33% also shows there is room to save more."),
+        T("realized", ("c", 46, [209, 382, 644, 792]), "Closing the loop",
+          "Savings from downsizing and eliminating resources: the recommendations you saw earlier, turned into results."),
     ]
     return dict(file="savings.html", title="Are we actually saving money?", start="home", screens=S, tour=tour, images=b.images)
 
