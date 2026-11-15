@@ -193,7 +193,7 @@ def scenario_ai():
                     b.hot(("s", [0, 405, 200, 28]), go="ai", label="AI & Tokenomics")]
         return s
 
-    mp = S["rep_mp"] = report("Multi-Provider report", 11)
+    mp = S["rep_mp"] = report("Multi-Provider", 11)
     mp["hot"] += [
         b.hot(("c", 11, [797, 222, 146, 25]), go="rep_mp@yaxis", label="Open the Y-Axis options"),
         b.hot(("c", 11, [215, 275, 1255, 355]), title="Effective cost per day by model name",
@@ -237,7 +237,7 @@ def scenario_ai():
         dict(l="o", r=[84, 36, 62, 16], go="rep_usage", label="Close panel"),
     ]
 
-    ru = S["rep_user"] = report("One user's usage", 35)
+    ru = S["rep_user"] = report("One user", 35)
     ru["hot"] += [
         b.hot(("c", 35, [215, 275, 1255, 320]), title="One user's token usage",
             text="The report now shows a single user: which models they called and how many tokens each day."),
