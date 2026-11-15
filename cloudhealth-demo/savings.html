@@ -27,8 +27,9 @@
   @keyframes beckon { 50% { box-shadow: 0 0 0 8px rgba(255,159,28,.28); transform: scale(1.05); } }
   #tabs { display: flex; gap: 4px; flex-wrap: wrap; }
   #tabs button, .ctl { background: var(--bar-2); border: 1px solid #34485c; border-radius: 6px; padding: 5px 10px; white-space: nowrap; }
-  #tabs button[aria-current="true"] { background: #0b79c4; border-color: #0b79c4; }
-  #tabs button:hover, .ctl:hover { border-color: #6f8aa5; }
+  #tabs button { color: var(--muted); background: transparent; border-color: transparent; border-radius: 0; border-bottom: 2px solid transparent; }
+  #tabs button[aria-current="true"] { color: #fff; border-bottom-color: #6f8aa5; }
+  #tabs button:hover { color: #fff; } .ctl:hover { border-color: #6f8aa5; }
   .spacer { flex: 1; }
   .ctl.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
   .ctl[aria-pressed="true"] { background: #0b79c4; border-color: #0b79c4; }
@@ -107,12 +108,12 @@
 <body>
 
 <header id="bar">
-  <span class="title">CloudHealth walkthrough <small id="ver">v4</small></span>
+  <span class="title">CloudHealth walkthrough <small id="ver">v5</small></span>
   <label id="scenWrap"><span>Scenario</span><select id="scen" aria-label="Choose a scenario"></select></label>
+  <button class="ctl primary idle" id="btnTour">▶ Start tour</button>
   <nav id="tabs" aria-label="Screens"></nav>
   <span class="spacer"></span>
   <button class="ctl" id="btnHints" aria-pressed="false">Show hotspots</button>
-  <button class="ctl primary idle" id="btnTour">▶ Start tour</button>
 </header>
 
 <main id="holder">
