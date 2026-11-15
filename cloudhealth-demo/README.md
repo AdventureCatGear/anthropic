@@ -1,24 +1,38 @@
-# CloudHealth clickthrough demo
+# CloudHealth walkthroughs
 
-A self-contained, clickable walkthrough built from four screenshots of a
-CloudHealth demo sandbox (Home, AI & Tokenomics, and two AI cost reports).
-It is a static demo: the screens are images with clickable hotspots, not a
-live product.
+Three self-contained, clickable walkthroughs built from screenshots of a
+CloudHealth demo sandbox. They are static: the screens are images with
+clickable areas, not a live product.
 
-## Use it
+| File | Walkthrough |
+|---|---|
+| `ai-spend.html` | Where is our AI spend going? |
+| `bring-your-data.html` | Bring your own data (Data Connect and custom datasets) |
+| `savings.html` | Are we actually saving money? |
 
-Open `index.html` in any modern browser. The file has the screenshots embedded,
-so that one file is all you need: email it, put it on a USB stick or shared
-drive, or drop it on any static host.
+## Use them
 
-- **Click** highlighted areas to move between screens, as you would in the product.
-- **Info markers** (blue "i") explain what a card or control does.
-- **Start tour** runs a 15-step guided story: total cloud spend → AI spend → individual model.
-- Keys: `H` show hotspots · `T` tour · `←` `→` tour steps · `F` fit to window · `Esc` close.
+Open any of the three files in a modern browser. Each has its images and font
+embedded, so a file works on its own; keep the three in one folder and the
+dropdown in the top bar switches between them.
 
-## Change it
+Three ways through each one:
 
-Edit `demo.template.html` (screens, hotspot rectangles and tour text are plain
-data at the top of the script), replace images in `screens/`, then rebuild:
+- **Start tour**: numbered steps with Next / Back.
+- **Explore**: click highlighted areas, or jump with the screen tabs. "Show hotspots" reveals what is clickable.
+- **Blue "i" markers**: explain a card or control without navigating.
 
-    node build.mjs
+The header and left menu stay fixed and the content scrolls inside the frame,
+as in the product.
+
+## Change them
+
+Everything is defined in `build.py`: which captures make up each screen, the
+clickable areas, the explanatory text, the tour steps and the replaced names.
+Coordinates are pixels in the original capture. `template.html` is the page
+itself. After editing, rebuild:
+
+    python3 build.py
+
+Needs Python 3 with Pillow and NumPy. `captures/` holds the source screenshots
+(not all are used); `fonts/` holds Metropolis (SIL Open Font License).

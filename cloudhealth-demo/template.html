@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__ · CloudHealth walkthrough</title>
+<style>
+/*FONTS*/
+  :root { --bar: #16212c; --bar-2: #223242; --ink: #e9eff5; --muted: #9db0c2;
+    --accent: #ff9f1c; --accent-ink: #201400; --info: #2f9bff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #0d141b; color: var(--ink); overflow: hidden;
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+
+  /* ---- demo bar (not part of the product) ---- */
+  #bar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--bar);
+    border-bottom: 1px solid #2c3e50; flex-wrap: wrap; }
+  #bar .title { font-weight: 600; margin-right: 4px; }
+  #scen { background: var(--bar-2); color: var(--ink); border: 1px solid #34485c; border-radius: 6px; padding: 5px 8px; font: inherit; font-weight: 600; max-width: 100%; }
+  #tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  #tabs button, .ctl { background: var(--bar-2); border: 1px solid #34485c; border-radius: 6px; padding: 5px 10px; white-space: nowrap; }
+  #tabs button[aria-current="true"] { background: #0b79c4; border-color: #0b79c4; }
+  #tabs button:hover, .ctl:hover { border-color: #6f8aa5; }
+  .spacer { flex: 1; }
+  .ctl.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .ctl[aria-pressed="true"] { background: #0b79c4; border-color: #0b79c4; }
+
+  /* ---- product frame: fixed header + menu, scrolling content ---- */
+  #holder { display: flex; justify-content: center; padding: 10px 10px 0; }
+  #wrap { position: relative; box-shadow: 0 6px 30px rgba(0,0,0,.5); }
+  #stage { position: absolute; left: 0; top: 0; width: 1529px; transform-origin: 0 0; overflow: hidden;
+    font-family: Metropolis, "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+  #stage img { display: block; user-select: none; -webkit-user-drag: none; }
+  #head { position: absolute; left: 0; top: 0; width: 1529px; height: 48px; z-index: 3; }
+  #side { position: absolute; left: 0; top: 48px; width: 200px; bottom: 0; overflow: hidden; z-index: 2; }
+  #pane { position: absolute; left: 200px; top: 48px; right: 0; bottom: 0; overflow-y: auto; overflow-x: hidden; z-index: 1; }
+  #page { position: relative; }
+  .light #head { background: rgb(48,66,80); } .dark #head { background: rgb(15,23,28); }
+  .light #side { background: rgb(243,245,247); } .dark #side { background: rgb(23,37,43); }
+  .light #pane { background: #fff; } .dark #pane { background: rgb(27,43,50); }
+  .fade #pane, .fade #side, .fade #head { animation: fade .35s ease; }
+  @keyframes fade { from { opacity: .25; } }
+
+  /* replaced text in the header */
+  #pill { position: absolute; left: 179px; top: 13px; width: 242px; height: 22px; border-radius: 11px; padding: 0 9px;
+    font-size: 11.5px; line-height: 19px; white-space: nowrap; border: 1.5px solid #49afd9; }
+  .light #pill { background: #fff; color: #1b2a32; } .dark #pill { background: rgb(15,23,28); color: #e9ecef; }
+  #user { position: absolute; left: 1340px; top: 6px; width: 162px; height: 38px; text-align: right; padding-right: 3px; white-space: nowrap; }
+  .light #user { background: rgb(48,66,80); color: #e9ecef; } .dark #user { background: rgb(15,23,28); color: #e9ecef; }
+  #user b { display: block; font-weight: 400; font-size: 13px; line-height: 18px; margin-top: 2px; }
+  #user span { display: block; font-size: 11px; line-height: 14px; font-weight: 500; }
+  .patch { position: absolute; background: #fff; font-size: 11.5px; line-height: 18px; white-space: nowrap; overflow: hidden; color: #1b2a32; padding-left: 4px; }
+
+  /* overlays */
+  #dim { position: absolute; z-index: 5; display: none; }
+  #ov { position: absolute; z-index: 6; display: none; background: #fff; overflow-y: auto; overflow-x: hidden; }
+  #ov.dialog { box-shadow: 0 8px 40px rgba(0,0,0,.45); }
+  #ov.panel { box-shadow: -4px 0 18px rgba(0,0,0,.25); }
+  #ovin { position: relative; }
+
+  /* hotspots */
+  .hs { position: absolute; border-radius: 4px; background: transparent; border: 0; padding: 0; }
+  .hs:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .hs.nav { cursor: pointer; } .hs.info { cursor: help; }
+  .hs.nav:hover { box-shadow: 0 0 0 2px var(--accent), 0 0 0 6px rgba(255,159,28,.25); background: rgba(255,159,28,.10); }
+  .hs.info:hover { box-shadow: 0 0 0 2px var(--info); background: rgba(47,155,255,.07); }
+  .hints .hs.nav, .flash .hs.nav { box-shadow: 0 0 0 2px var(--accent); background: rgba(255,159,28,.14); animation: pulse 1.4s ease-in-out infinite; }
+  .hints .hs.info::after, .flash .hs.info::after { content: "i"; position: absolute; top: 6px; right: 6px; width: 20px; height: 20px;
+    border-radius: 50%; background: var(--info); color: #fff; font: 700 12px/20px Georgia, serif; text-align: center; box-shadow: 0 0 0 4px rgba(47,155,255,.3); }
+  .ovopen #head .hs, .ovopen #side .hs, .ovopen #pane .hs { display: none; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 2px var(--accent), 0 0 0 9px rgba(255,159,28,0); background: rgba(255,159,28,.26); } }
+  @media (prefers-reduced-motion: reduce) { .hs, .fade #pane, .fade #side, .fade #head { animation: none !important; } }
+
+  #spot { position: absolute; border-radius: 6px; pointer-events: none; z-index: 20; display: none;
+    box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(8,14,20,.5); }
+  #callout { position: absolute; z-index: 30; width: 330px; max-width: 90%; background: #fff; color: #17212b; border-radius: 8px;
+    padding: 14px 16px 12px; box-shadow: 0 10px 40px rgba(0,0,0,.45); display: none; }
+  #callout h3 { margin: 0 18px 6px 0; font-size: 15px; }
+  #callout p { margin: 0 0 10px; font-size: 13.5px; }
+  #callout .do { font-weight: 600; color: #a55a00; }
+  #callout .row { display: flex; align-items: center; gap: 8px; }
+  #callout .count { color: #6b7a89; font-size: 12px; margin-right: auto; }
+  #callout button { border: 1px solid #c5d0db; background: #f3f6f9; color: #17212b; border-radius: 6px; padding: 4px 10px; }
+  #callout button.next { background: #0b79c4; border-color: #0b79c4; color: #fff; font-weight: 600; }
+  #callout .x { position: absolute; top: 6px; right: 8px; border: 0; background: none; font-size: 18px; color: #6b7a89; padding: 2px 6px; }
+
+  #toast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); background: #17212b; color: #fff;
+    border: 1px solid #3a4e62; padding: 9px 14px; border-radius: 8px; z-index: 60; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 90vw; }
+  #toast.on { opacity: 1; }
+  #foot { text-align: center; color: var(--muted); font-size: 12px; padding: 6px 12px; height: 30px; }
+</style>
+</head>
+<body>
+
+<header id="bar">
+  <span class="title">CloudHealth walkthrough</span>
+  <select id="scen" aria-label="Choose a walkthrough"></select>
+  <nav id="tabs" aria-label="Screens"></nav>
+  <span class="spacer"></span>
+  <button class="ctl" id="btnHints" aria-pressed="false">Show hotspots</button>
+  <button class="ctl primary" id="btnTour">▶ Start tour</button>
+</header>
+
+<main id="holder">
+  <div id="wrap">
+    <div id="stage" class="light">
+      <div id="head"><img id="headImg" alt=""><div id="pill">Organization: NX Demo</div><div id="user"><b>Alex Morgan</b><span>NX Demo</span></div></div>
+      <div id="side"><img id="sideImg" alt=""></div>
+      <div id="pane"><div id="page"><img id="pageImg" alt=""></div></div>
+      <div id="dim"></div>
+      <div id="ov"><div id="ovin"><img id="ovImg" alt=""></div></div>
+      <div id="spot"></div>
+    </div>
+    <div id="callout" role="dialog" aria-live="polite">
+      <button class="x" id="cClose" aria-label="Close">×</button>
+      <h3 id="cTitle"></h3>
+      <p id="cText"></p>
+      <div class="row" id="cRow">
+        <span class="count" id="cCount"></span>
+        <button id="cPrev">Back</button>
+        <button id="cNext" class="next">Next</button>
+      </div>
+    </div>
+  </div>
+</main>
+<div id="foot">Take the guided tour, click highlighted areas to explore at your own pace, or use the blue markers to learn what a screen shows. Scroll inside the screen as you would in the product.</div>
+<div id="toast" role="status"></div>
+
+<script>
+const CFG = __CFG__;
+const W = 1529, HEAD = 48, SIDE = 200, MAXH = 1093;
+const $ = (id) => document.getElementById(id);
+const stage = $("stage"), wrap = $("wrap"), pane = $("pane"), ov = $("ov"), dim = $("dim"), spot = $("spot"), callout = $("callout");
+let cur = null, curOv = null, tourIdx = -1, openInfo = null, k = 1, H = MAXH;
+
+const parse = (t) => { const [s, o] = t.split("@"); return { s, o: o || null }; };
+const here = () => cur + (curOv ? "@" + curOv : "");
+const px = (v) => v + "px";
+
+function addHots(parent, list, layer) {
+  parent.querySelectorAll(".hs").forEach((e) => e.remove());
+  // larger areas first so smaller hotspots sit on top
+  [...list].filter((h) => h.l === layer).sort((a, b) => b.r[2] * b.r[3] - a.r[2] * a.r[3]).forEach((h) => {
+    const b = document.createElement("button");
+    b.className = "hs " + (h.go ? "nav" : "info");
+    Object.assign(b.style, { left: px(h.r[0]), top: px(h.r[1]), width: px(h.r[2]), height: px(h.r[3]) });
+    b.title = h.label || h.title; b.setAttribute("aria-label", b.title);
+    b.addEventListener("click", (e) => { e.stopPropagation(); h.go ? navigate(h.go) : info(h); });
+    parent.appendChild(b);
+  });
+}
+
+function show(target, opts = {}) {
+  const { s, o } = parse(target), sc = CFG.screens[s];
+  if (!sc) return;
+  const changed = s !== cur, themeChange = cur && CFG.screens[cur].theme !== sc.theme;
+  cur = s; curOv = o;
+  if (changed) {
+    stage.classList.remove("light", "dark"); stage.classList.add(sc.theme);
+    $("headImg").src = CFG.images["head_" + sc.theme];
+    $("sideImg").src = CFG.images[sc.side];
+    $("pageImg").src = CFG.images[sc.content];
+    $("page").style.width = px(sc.cw); $("page").style.height = px(sc.ch);
+    $("page").querySelectorAll(".patch").forEach((e) => e.remove());
+    for (const p of sc.patches) {
+      const d = document.createElement("div"); d.className = "patch"; d.textContent = p.text;
+      Object.assign(d.style, { left: px(p.r[0]), top: px(p.r[1]), width: px(p.r[2]), height: px(p.r[3]) });
+      if (p.color) d.style.color = p.color;
+      if (p.underline) d.style.textDecoration = "underline";
+      $("page").appendChild(d);
+    }
+    addHots($("head"), sc.hot, "h"); addHots($("side"), sc.hot, "s"); addHots($("page"), sc.hot, "c");
+    pane.scrollTop = 0;
+    if (themeChange) { stage.classList.remove("fade"); void stage.offsetWidth; stage.classList.add("fade"); }
+  }
+  // overlay
+  stage.classList.toggle("ovopen", !!o);
+  if (o) {
+    const d = sc.overlays[o];
+    $("ovImg").src = CFG.images[d.src];
+    $("ovin").style.width = px(d.w); $("ovin").style.height = px(d.h);
+    ov.className = d.kind; ov.dataset.kind = d.kind; ov.scrollTop = 0;
+    addHots($("ovin"), d.hot, "o");
+    ov.style.display = dim.style.display = "block";
+  } else { ov.style.display = dim.style.display = "none"; }
+  for (const t of $("tabs").children) t.setAttribute("aria-current", t.dataset.id === s);
+  history.replaceState(null, "", "#" + s);
+  if (!opts.keepCallout) hideCallout();
+  layout();
+}
+
+function navigate(to) {
+  if (tourIdx >= 0) {
+    if (CFG.tour[tourIdx].act === to) return tourGo(tourIdx + 1);
+    endTour();
+  }
+  show(to);
+}
+
+function layout() {
+  const availW = window.innerWidth - 20;
+  const availH = window.innerHeight - $("bar").offsetHeight - $("foot").offsetHeight - 12;
+  k = Math.min(1, availW / W);
+  H = Math.round(Math.max(560, Math.min(MAXH, availH / k)));
+  stage.style.height = px(H); stage.style.transform = "scale(" + k + ")";
+  wrap.style.width = px(W * k); wrap.style.height = px(H * k);
+  if (curOv) {
+    const d = CFG.screens[cur].overlays[curOv];
+    if (d.kind === "dialog") {
+      Object.assign(dim.style, { left: 0, top: 0, width: px(W), height: px(H), background: "rgba(0,0,0,.6)" });
+      const h = Math.min(d.h, H - 20);
+      Object.assign(ov.style, { left: px((W - d.w) / 2), top: px(Math.max(10, (H - h) / 2)), width: px(d.w), height: px(h) });
+    } else {
+      Object.assign(dim.style, { left: px(SIDE), top: px(HEAD), width: px(W - SIDE), height: px(H - HEAD), background: "rgba(0,0,0,.4)" });
+      Object.assign(ov.style, { left: px(W - d.w), top: px(HEAD), width: px(d.w), height: px(H - HEAD) });
+    }
+  }
+  place();
+}
+
+/* ---- geometry: a rectangle in a layer -> stage coordinates ---- */
+function onStage(l, r) {
+  if (l === "h") return [r[0], r[1], r[2], r[3]];
+  if (l === "s") return [r[0], r[1] + HEAD, r[2], r[3]];
+  if (l === "c") return [r[0] + SIDE, r[1] + HEAD - pane.scrollTop, r[2], r[3]];
+  return [ov.offsetLeft + r[0], ov.offsetTop + r[1] - ov.scrollTop, r[2], r[3]];
+}
+function reveal(l, r) {
+  const el = l === "c" ? pane : l === "o" ? ov : null;
+  if (!el) return;
+  const vh = el.clientHeight, top = r[1], bot = r[1] + r[3];
+  if (top >= el.scrollTop + 8 && bot <= el.scrollTop + vh - 8) return;
+  el.scrollTop = r[3] > vh - 40 ? top - 20 : top - (vh - r[3]) / 2;
+}
+function place() {
+  const t = tourIdx >= 0 ? CFG.tour[tourIdx] : openInfo;
+  if (!t) return;
+  let [x, y, w, h] = onStage(t.l, t.r);
+  // clip to what is visible of that layer
+  const minY = t.l === "c" ? HEAD : 0, x2 = Math.min(W, x + w), y2 = Math.min(H, y + h);
+  x = Math.max(0, x); y = Math.max(minY, y); w = Math.max(0, x2 - x); h = Math.max(0, y2 - y);
+  if (tourIdx >= 0) Object.assign(spot.style, { display: h > 4 ? "block" : "none", left: px(x), top: px(y), width: px(w), height: px(h) });
+  // callout lives outside the scaled stage so its text stays readable
+  const B = { x: x * k, y: y * k, w: w * k, h: h * k }, SW = W * k, SH = H * k, gap = 14;
+  callout.style.display = "block";
+  const cw = callout.offsetWidth, ch = callout.offsetHeight;
+  let cx, cy;
+  if (B.x + B.w + gap + cw <= SW) { cx = B.x + B.w + gap; cy = B.y; }
+  else if (B.x - gap - cw >= 0) { cx = B.x - gap - cw; cy = B.y; }
+  else if (B.y + B.h + gap + ch <= SH) { cx = B.x + B.w - cw; cy = B.y + B.h + gap; }
+  else if (B.y - gap - ch >= 0) { cx = B.x + B.w - cw; cy = B.y - gap - ch; }
+  else { cx = B.x + B.w - cw - 14; cy = B.y + B.h - ch - 14; }
+  callout.style.left = px(Math.max(8, Math.min(cx, SW - cw - 8)));
+  callout.style.top = px(Math.max(8, Math.min(cy, SH - ch - 8)));
+}
+function hideCallout() { callout.style.display = "none"; openInfo = null; }
+
+function info(h) {
+  if (tourIdx >= 0) endTour();
+  openInfo = h;
+  $("cTitle").textContent = h.title; $("cText").textContent = h.text;
+  $("cRow").style.display = "none";
+  place();
+}
+
+/* ---- guided tour ---- */
+function tourGo(i) {
+  if (i < 0) i = 0;
+  if (i >= CFG.tour.length) { endTour(); toast("Tour finished. Explore freely: anything highlighted is clickable."); return; }
+  tourIdx = i; openInfo = null;
+  const t = CFG.tour[i];
+  if (here() !== t.s) show(t.s, { keepCallout: true });
+  $("btnTour").textContent = "■ End tour";
+  $("cTitle").textContent = t.title;
+  $("cText").textContent = t.text ? t.text + " " : "";
+  if (t.do) { const d = document.createElement("span"); d.className = "do"; d.textContent = t.do; $("cText").append(d); }
+  $("cRow").style.display = "flex";
+  $("cCount").textContent = (i + 1) + " of " + CFG.tour.length;
+  $("cPrev").style.visibility = i === 0 ? "hidden" : "visible";
+  $("cNext").textContent = i === CFG.tour.length - 1 ? "Finish" : "Next";
+  reveal(t.l, t.r);
+  place();
+}
+function endTour() {
+  tourIdx = -1; spot.style.display = "none";
+  $("btnTour").textContent = "▶ Start tour";
+  hideCallout();
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("on"), 2600);
+}
+function setHints(on) { stage.classList.toggle("hints", on); $("btnHints").setAttribute("aria-pressed", on); }
+
+// A click on something that is not wired up reveals what is.
+stage.addEventListener("click", () => {
+  if (tourIdx >= 0) return;
+  if (openInfo) return hideCallout();
+  stage.classList.add("flash"); setTimeout(() => stage.classList.remove("flash"), 1500);
+  toast("That part isn't included in this walkthrough. Highlighted areas are clickable.");
+});
+pane.addEventListener("scroll", place); ov.addEventListener("scroll", place);
+$("btnHints").onclick = () => setHints(!stage.classList.contains("hints"));
+$("btnTour").onclick = () => (tourIdx >= 0 ? endTour() : tourGo(0));
+$("cNext").onclick = () => tourGo(tourIdx + 1);
+$("cPrev").onclick = () => tourGo(tourIdx - 1);
+$("cClose").onclick = () => (tourIdx >= 0 ? endTour() : hideCallout());
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") (tourIdx >= 0 ? endTour() : hideCallout()); });
+window.addEventListener("resize", layout);
+
+CFG.nav.forEach((n, i) => {
+  const o = document.createElement("option"); o.value = n.file; o.textContent = (i + 1) + ". " + n.title; o.selected = n.file === CFG.file;
+  $("scen").appendChild(o);
+});
+$("scen").onchange = (e) => { location.href = e.target.value; };
+for (const [id, sc] of Object.entries(CFG.screens)) {
+  if (!sc.tab) continue;
+  const b = document.createElement("button"); b.textContent = sc.label; b.dataset.id = id;
+  b.onclick = () => { if (tourIdx >= 0) endTour(); show(id); };
+  $("tabs").appendChild(b);
+}
+const first = location.hash.slice(1);
+show(CFG.screens[first] ? first : CFG.start);
+if (!CFG.screens[first]) { setHints(true); setTimeout(() => setHints(false), 4000); }
+</script>
+</body>
+</html>
