@@ -589,16 +589,20 @@ def main():
         f"@font-face{{font-family:Metropolis;font-weight:{w};src:url(data:font/woff2;base64,{d}) format('woff2')}}"
         for w, d in fonts.items())
     scenarios = [scenario_ai(), scenario_data(), scenario_savings()]
-    nav = [dict(file=s["file"], title=s["title"]) for s in scenarios]
-    for s in scenarios:
-        for sid in {t["s"].split("@")[0] for t in s["tour"]} | {s["start"]}:
-            assert sid in s["screens"], sid
-        cfg = dict(title=s["title"], start=s["start"], screens=s["screens"], tour=s["tour"],
-                   images=s["images"], nav=nav, file=s["file"])
-        html = (tpl.replace("/*FONTS*/", font_css).replace("__TITLE__", s["title"])
-                   .replace("__CFG__", json.dumps(cfg, separators=(",", ":"))))
-        open(os.path.join(HERE, s["file"]), "w", encoding="utf8").write(html)
-        print(f"{s['file']}: {len(html) / 1e6:.1f} MB, {len(s['screens'])} screens, {len(s['tour'])} tour steps")
+    # One file holds all three scenarios, so the scenario picker works wherever the file is opened from.
+    images = {}
+    for sc in scenarios:
+        for sid in {t["s"].split("@")[0] for t in sc["tour"]} | {sc["start"]}:
+            assert sid in sc["screens"], sid
+        images.update(sc["images"])
+    cfg = dict(images=images, scenarios=[dict(title=sc["title"], start=sc["start"], screens=sc["screens"], tour=sc["tour"])
+                                         for sc in scenarios])
+    html = tpl.replace("/*FONTS*/", font_css).replace("__CFG__", json.dumps(cfg, separators=(",", ":")))
+    out = "cloudhealth-walkthroughs.html"
+    open(os.path.join(HERE, out), "w", encoding="utf8").write(html)
+    print(f"{out}: {len(html) / 1e6:.1f} MB")
+    for sc in scenarios:
+        print(f"  {sc['title']}: {len(sc['screens'])} screens, {len(sc['tour'])} tour steps")
 
 
 if __name__ == "__main__":

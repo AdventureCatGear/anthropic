@@ -1,20 +1,20 @@
 # CloudHealth walkthroughs
 
-Three self-contained, clickable walkthroughs built from screenshots of a
+Self-contained, clickable walkthroughs built from screenshots of a
 CloudHealth demo sandbox. They are static: the screens are images with
 clickable areas, not a live product.
 
-| File | Walkthrough |
-|---|---|
-| `ai-spend.html` | Where is our AI spend going? |
-| `bring-your-data.html` | Bring your own data (Data Connect and custom datasets) |
-| `savings.html` | Are we actually saving money? |
+One file, `cloudhealth-walkthroughs.html`, holds all three scenarios:
 
-## Use them
+1. Where is our AI spend going?
+2. Bring your own data (Data Connect and custom datasets)
+3. Are we actually saving money?
 
-Open any of the three files in a modern browser. Each has its images and font
-embedded, so a file works on its own; keep the three in one folder and the
-dropdown in the top bar switches between them.
+## Use it
+
+Open the file in a modern browser. Its images and font are embedded, so it
+works from anywhere: an email attachment, a downloads folder, a shared drive.
+The Scenario dropdown in the top bar switches between the three.
 
 Three ways through each one:
 
@@ -25,7 +25,7 @@ Three ways through each one:
 The header and left menu stay fixed and the content scrolls inside the frame,
 as in the product.
 
-## Change them
+## Change it
 
 Everything is defined in `build.py`: which captures make up each screen, the
 clickable areas, the explanatory text, the tour steps and the replaced names.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>__TITLE__ · CloudHealth walkthrough</title>
+<title>CloudHealth walkthroughs</title>
 <style>
 /*FONTS*/
   :root { --bar: #16212c; --bar-2: #223242; --ink: #e9eff5; --muted: #9db0c2;
@@ -120,7 +120,7 @@
 <body>
 
 <header id="bar">
-  <span class="title">CloudHealth walkthrough <small id="ver">v7</small></span>
+  <span class="title">CloudHealth walkthrough <small id="ver">v8</small></span>
   <label id="scenWrap"><span>Scenario</span><select id="scen" aria-label="Choose a scenario"></select></label>
   <button class="ctl primary idle" id="btnTour">▶ Start tour</button>
   <button class="ctl" id="btnHints" aria-pressed="false">Show hotspots</button>
@@ -154,7 +154,8 @@
 <div id="toast" role="status"></div>
 
 <script>
-const CFG = __CFG__;
+const DATA = __CFG__;
+let CFG = DATA.scenarios[0], scenIdx = 0;
 const W = 1529, HEAD = 48, SIDE = 200, MAXH = 1093;
 const $ = (id) => document.getElementById(id);
 const stage = $("stage"), wrap = $("wrap"), pane = $("pane"), ov = $("ov"), dim = $("dim"), mask = $("mask"), rings = [$("ring0"), $("ring1"), $("ring2")], callout = $("callout");
@@ -184,9 +185,9 @@ function show(target, opts = {}) {
   cur = s; curOv = o;
   if (changed) {
     stage.classList.remove("light", "dark"); stage.classList.add(sc.theme);
-    $("headImg").src = CFG.images["head_" + sc.theme];
-    $("sideImg").src = CFG.images[sc.side];
-    $("pageImg").src = CFG.images[sc.content];
+    $("headImg").src = DATA.images["head_" + sc.theme];
+    $("sideImg").src = DATA.images[sc.side];
+    $("pageImg").src = DATA.images[sc.content];
     $("page").style.width = px(sc.cw); $("page").style.height = px(sc.ch);
     $("page").querySelectorAll(".patch").forEach((e) => e.remove());
     for (const p of sc.patches) {
@@ -205,14 +206,14 @@ function show(target, opts = {}) {
   stage.classList.toggle("ovopen", !!o);
   if (o) {
     const d = sc.overlays[o];
-    $("ovImg").src = CFG.images[d.src];
+    $("ovImg").src = DATA.images[d.src];
     $("ovin").style.width = px(d.w); $("ovin").style.height = px(d.h);
     ov.className = d.kind; ov.dataset.kind = d.kind; ov.scrollTop = 0;
     addHots($("ovin"), d.hot, "o");
     ov.style.display = dim.style.display = "block";
   } else { ov.style.display = dim.style.display = "none"; }
   for (const t of $("tabs").children) t.setAttribute("aria-current", t.dataset.id === s);
-  history.replaceState(null, "", "#" + s);
+  history.replaceState(null, "", "#" + (scenIdx + 1) + "-" + s);
   if (!opts.keepCallout) hideCallout();
   layout();
 }
@@ -322,11 +323,11 @@ function place(animate) {
   // the callout lives outside the scaled stage so its text stays readable
   const SW = W * k, SH = H * k, gap = 14;
   callout.style.display = "block";
+  callout.classList.toggle("intro", !!t.intro);          // set before measuring: the intro card is wider
   callout.classList.toggle("glide", !!animate);
   const cw = callout.offsetWidth, ch = callout.offsetHeight;
   const clampX = (x) => Math.max(8, Math.min(x, SW - cw - 8)), clampY = (y) => Math.max(8, Math.min(y, SH - ch - 8));
   let cx, cy;
-  callout.classList.toggle("intro", !!t.intro);
   if (t.intro) { cx = SW / 2 - cw / 2; cy = SH / 2 - ch / 2; }                    // centred welcome card; nothing behind it is dimmed
   else if (t.pos === "above" && curOv) { cx = main[0] * k + main[2] * k / 2 - cw / 2; cy = ov.offsetTop * k - gap - ch; }   // keep the whole dialog visible
   else {
@@ -412,19 +413,28 @@ $("cClose").onclick = () => (tourIdx >= 0 ? endTour() : hideCallout());
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") (tourIdx >= 0 ? endTour() : hideCallout()); });
 window.addEventListener("resize", layout);
 
-CFG.nav.forEach((n, i) => {
-  const o = document.createElement("option"); o.value = n.file; o.textContent = (i + 1) + ". " + n.title; o.selected = n.file === CFG.file;
+DATA.scenarios.forEach((n, i) => {
+  const o = document.createElement("option"); o.value = i; o.textContent = (i + 1) + ". " + n.title;
   $("scen").appendChild(o);
 });
-$("scen").onchange = (e) => { location.href = e.target.value; };
-for (const [id, sc] of Object.entries(CFG.screens)) {
-  if (!sc.tab) continue;
-  const b = document.createElement("button"); b.textContent = sc.label; b.dataset.id = id;
-  b.onclick = () => { if (tourIdx >= 0) endTour(); show(id); };
-  $("tabs").appendChild(b);
+// All three scenarios live in this one file; switching never loads another file.
+function loadScenario(i, screen, instant) {
+  if (tourIdx >= 0) endTour();
+  hideCallout();
+  scenIdx = i; CFG = DATA.scenarios[i]; $("scen").value = i;
+  $("tabs").innerHTML = "";
+  for (const [id, sc] of Object.entries(CFG.screens)) {
+    if (!sc.tab) continue;
+    const b = document.createElement("button"); b.textContent = sc.label; b.dataset.id = id;
+    b.onclick = () => { if (tourIdx >= 0) endTour(); show(id); };
+    $("tabs").appendChild(b);
+  }
+  cur = null; curOv = null;
+  show(CFG.screens[screen] ? screen : CFG.start, { instant });
 }
-const first = location.hash.slice(1);
-show(CFG.screens[first] ? first : CFG.start, { instant: true });
+$("scen").onchange = (e) => loadScenario(+e.target.value);
+const m = /^(\d)-(.+)$/.exec(location.hash.slice(1));
+loadScenario(m && DATA.scenarios[m[1] - 1] ? m[1] - 1 : 0, m ? m[2] : null, true);
 
 </script>
 </body>
