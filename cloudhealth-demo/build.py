@@ -266,7 +266,7 @@ def scenario_ai():
     O = lambda s, r, title, text, **kw: tstep(b, s, ("o", r), title, text, **kw)
     tour = [
         T("home", None, "Where is our AI spend going?",
-          "This walkthrough follows AI cost from the executive dashboard down to one person's token usage. About two minutes."),
+          "AI is now a real line on the bill, and finance wants to know who and what is driving it. In this walkthrough you start on the executive dashboard, break AI cost down by cloud, model and how tokens were bought, then filter a report to a single person's usage. About two minutes."),
         T("home", ("c", 22, [1053, 207, 413, 231]), "Start from the executive view",
           "This tile is the AI line on the CFO dashboard: total model cost and tokens consumed. It tells you how much, not where it goes. The breakdown is in AI & Tokenomics.",
           do="Click AI & Tokenomics in the left menu.", act="ai", r2=("s", [0, 303, 200, 28])),
@@ -443,7 +443,7 @@ def scenario_data():
     O = lambda s, r, title, text, **kw: tstep(b, s, ("o", r), title, text, **kw)
     tour = [
         T("connect", None, "Bring your own data",
-          "This walkthrough connects an AI provider's billing, then combines it with cloud cost in one dataset. About two minutes."),
+          "Not all spend arrives on an AWS, Azure or Google Cloud invoice. In this walkthrough you connect an AI provider's billing with Data Connect, then build a custom dataset that joins it to cloud cost, so both can be reported on together. About two minutes."),
         T("connect", ("c", 36, [220, 286, 1250, 300]), "Start with Data Connect",
           "Every source of spend brought in from outside AWS, Azure and Google Cloud, with its health and last collection time. We start here because AI provider bills are not on any cloud invoice.",
           do="Click Add Data Connect.", act="connect@choose", r2=("c", 36, [1334, 151, 137, 24])),
@@ -550,7 +550,7 @@ def scenario_savings():
     T = lambda s, spec, title, text, **kw: tstep(b, s, spec, title, text, **kw)
     tour = [
         T("home", None, "Are we actually saving money?",
-          "This walkthrough shows what could still be saved, where, and what has already been saved. About two minutes."),
+          "Recommendations are easy to produce; proof is harder. In this walkthrough you see how much could still be saved and where, drill into the largest opportunity, then check what has actually been saved over the past year. About two minutes."),
         T("home", ("c", 22, [209, 847, 1257, 310]), "Start with what's left to save",
           "This card on the CFO dashboard is the headline: $2,594,311 saved last month. Before trusting it, look at what is still unclaimed. Recommendations lists every saving found that hasn't been acted on.",
           do="Click Recommendations.", act="opt", r2=("s", [0, 274, 200, 28])),

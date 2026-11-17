@@ -99,6 +99,9 @@
   @media (prefers-reduced-motion: reduce) { .ring.ping::after, #callout.pop { animation: none; } #callout.glide { transition: none; } }
   #callout { position: absolute; z-index: 30; width: 370px; max-width: 90%; background: #fff; color: #17212b; border-radius: 8px;
     padding: 14px 16px 12px; box-shadow: 0 10px 40px rgba(0,0,0,.45); display: none; }
+  #callout.intro { width: 460px; padding: 20px 22px 16px; }
+  #callout.intro h3 { font-size: 19px; margin-bottom: 10px; }
+  #callout.intro p { font-size: 14.5px; line-height: 1.5; }
   #callout h3 { margin: 0 18px 6px 0; font-size: 15px; }
   #callout p { margin: 0 0 10px; font-size: 13.5px; }
   #callout .do { font-weight: 600; color: #a55a00; }
@@ -117,7 +120,7 @@
 <body>
 
 <header id="bar">
-  <span class="title">CloudHealth walkthrough <small id="ver">v6</small></span>
+  <span class="title">CloudHealth walkthrough <small id="ver">v7</small></span>
   <label id="scenWrap"><span>Scenario</span><select id="scen" aria-label="Choose a scenario"></select></label>
   <button class="ctl primary idle" id="btnTour">▶ Start tour</button>
   <button class="ctl" id="btnHints" aria-pressed="false">Show hotspots</button>
@@ -323,7 +326,8 @@ function place(animate) {
   const cw = callout.offsetWidth, ch = callout.offsetHeight;
   const clampX = (x) => Math.max(8, Math.min(x, SW - cw - 8)), clampY = (y) => Math.max(8, Math.min(y, SH - ch - 8));
   let cx, cy;
-  if (t.intro) { cx = SW - cw - 24; cy = SH - ch - 24; }                         // out of the way: the whole screen stays visible
+  callout.classList.toggle("intro", !!t.intro);
+  if (t.intro) { cx = SW / 2 - cw / 2; cy = SH / 2 - ch / 2; }                    // centred welcome card; nothing behind it is dimmed
   else if (t.pos === "above" && curOv) { cx = main[0] * k + main[2] * k / 2 - cw / 2; cy = ov.offsetTop * k - gap - ch; }   // keep the whole dialog visible
   else {
     // try every side of every highlighted area and keep the spot that hides the least of them
